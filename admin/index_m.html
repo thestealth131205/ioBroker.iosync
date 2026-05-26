@@ -9,6 +9,7 @@
             background: #0d0d0d;
             color: #eee;
             font-family: 'Roboto', sans-serif;
+            padding-bottom: 72px;
         }
         .section-title {
             color: #eaff00;
@@ -27,8 +28,11 @@
         }
         .input-field input,
         .input-field textarea {
-            color: #eee !important;
+            color: #333 !important;
             border-bottom-color: #444 !important;
+            background: #fff !important;
+            border-radius: 4px 4px 0 0;
+            padding: 4px 8px !important;
         }
         .input-field input:focus,
         .input-field textarea:focus {
@@ -59,10 +63,10 @@
         }
         #dp-table tr:hover td { background: #1f1f1f; }
         #dp-table input {
-            background: #111;
+            background: #fff;
             border: 1px solid #333;
             border-radius: 4px;
-            color: #eee;
+            color: #333;
             padding: 4px 8px;
             font-size: 0.85rem;
             width: 100%;
@@ -89,7 +93,7 @@
         }
         .btn-del:hover { background: #2a1010; }
 
-        /* Such-Modal */
+        /* Baum-Modal */
         #search-modal {
             display: none;
             position: fixed;
@@ -98,22 +102,22 @@
             z-index: 9000;
             align-items: flex-start;
             justify-content: center;
-            padding-top: 60px;
+            padding-top: 40px;
         }
         #search-modal.open { display: flex; }
         #search-box {
             background: #1a1a1a;
             border-radius: 10px;
-            width: 680px;
-            max-width: 95vw;
-            max-height: 75vh;
+            width: 720px;
+            max-width: 96vw;
+            max-height: 80vh;
             display: flex;
             flex-direction: column;
             box-shadow: 0 8px 32px rgba(0,0,0,0.7);
             overflow: hidden;
         }
         #search-header {
-            padding: 16px 20px 12px;
+            padding: 14px 20px 10px;
             border-bottom: 1px solid #2a2a2a;
             display: flex;
             align-items: center;
@@ -125,44 +129,56 @@
             font-size: 1rem;
             flex: 1;
         }
+        #browser-count {
+            font-size: 0.75rem;
+            color: #555;
+        }
         #search-input-wrap {
-            display: flex;
-            gap: 8px;
-            padding: 12px 20px;
+            padding: 10px 20px;
             border-bottom: 1px solid #1e1e1e;
         }
         #search-pattern {
-            flex: 1;
+            width: 100%;
             background: #111;
             border: 1px solid #333;
             border-radius: 6px;
             color: #eee;
             padding: 8px 12px;
             font-size: 0.9rem;
+            box-sizing: border-box;
         }
         #search-pattern:focus { outline: none; border-color: #eaff00; }
-        #btn-do-search {
-            background: #eaff00;
-            color: #111;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 18px;
-            font-weight: 700;
-            cursor: pointer;
-            white-space: nowrap;
-        }
-        #btn-do-search:hover { background: #d4e800; }
         #search-results {
             overflow-y: auto;
             flex: 1;
         }
+        .ns-header {
+            padding: 5px 16px;
+            background: #1e1e1e;
+            color: #eaff00;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+        .ns-header:hover { background: #252525; }
+        .ns-count { color: #555; font-weight: normal; }
+        .ns-items { display: block; }
+        .ns-items.collapsed { display: none; }
         .search-item {
             display: flex;
             align-items: center;
-            padding: 8px 20px;
-            border-bottom: 1px solid #1e1e1e;
+            padding: 7px 20px;
+            border-bottom: 1px solid #181818;
             cursor: pointer;
-            transition: background 0.12s;
+            transition: background 0.1s;
             gap: 10px;
         }
         .search-item:hover { background: #232323; }
@@ -176,9 +192,13 @@
             white-space: nowrap;
         }
         .search-item-name {
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             color: #888;
             min-width: 80px;
+            max-width: 160px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
             text-align: right;
         }
         .search-item-unit {
@@ -187,11 +207,24 @@
             min-width: 30px;
             text-align: right;
         }
-        #search-empty {
-            padding: 24px;
+        #browser-loading {
+            padding: 30px;
             text-align: center;
             color: #666;
             font-size: 0.85rem;
+        }
+        .browser-more {
+            padding: 3px 20px 6px;
+            color: #555;
+            font-size: 0.72rem;
+            font-style: italic;
+        }
+        .browser-footer {
+            padding: 8px 16px;
+            color: #555;
+            font-size: 0.72rem;
+            text-align: center;
+            border-top: 1px solid #1e1e1e;
         }
         #search-footer {
             padding: 10px 20px;
@@ -239,22 +272,74 @@
         .wave-btn:hover { background: #d4e800 !important; }
 
         .row { margin-bottom: 0; }
+
+        /* Speichern-Leiste */
+        #save-bar {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #111;
+            border-top: 2px solid #2a2a2a;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 16px;
+            z-index: 7000;
+            box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
+        }
+        #save-status {
+            font-size: 0.82rem;
+            min-width: 140px;
+            text-align: right;
+        }
+        #btn-save-manual {
+            background: #eaff00;
+            color: #111;
+            border: none;
+            border-radius: 6px;
+            padding: 9px 28px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        #btn-save-manual:hover  { background: #d4e800; }
+        #btn-save-manual:disabled { background: #555; color: #999; cursor: default; }
+
+        /* GitHub-Info */
+        .github-info {
+            background: #111;
+            border: 1px solid #2a2a2a;
+            border-radius: 6px;
+            padding: 8px 14px;
+            font-size: 0.78rem;
+            color: #888;
+            margin-top: 8px;
+        }
+        .github-info code {
+            background: #1e1e1e;
+            border-radius: 3px;
+            padding: 1px 6px;
+            color: #eaff00;
+            font-size: 0.8rem;
+        }
     </style>
 </head>
 <body>
 
-<!-- ═══ Such-Modal ════════════════════════════════════════════════════════ -->
+<!-- ═══ Datenpunkt-Browser-Modal ══════════════════════════════════════════ -->
 <div id="search-modal">
     <div id="search-box">
         <div id="search-header">
             <span>ioBroker Datenpunkt auswählen</span>
+            <span id="browser-count"></span>
         </div>
         <div id="search-input-wrap">
-            <input id="search-pattern" type="text" placeholder="Muster z.B.  hm-rpc.0.*  oder  javascript.0.*" />
-            <button id="btn-do-search">Suchen</button>
+            <input id="search-pattern" type="text"
+                   placeholder="Filter: z.B. temperature, hm-rpc, javascript …" />
         </div>
         <div id="search-results">
-            <div id="search-empty">Suchbegriff eingeben und auf Suchen klicken.</div>
+            <div id="browser-loading">Datenpunkte werden geladen…</div>
         </div>
         <div id="search-footer">
             <button id="btn-close-search">Schließen</button>
@@ -263,7 +348,7 @@
 </div>
 
 <!-- ═══ Hauptinhalt ═══════════════════════════════════════════════════════ -->
-<div style="padding: 16px 8px 40px;">
+<div style="padding: 16px 8px 16px;">
 
     <!-- Header -->
     <div class="row">
@@ -301,8 +386,23 @@
                 </div>
             </div>
 
-            <div class="section-title">SSL-Zertifikat</div>
-            <p style="color:#666;font-size:0.8rem;margin-top:-4px;">
+            <div class="section-title">SSL / HTTP-Modus</div>
+            <div class="row" style="margin-bottom:8px;">
+                <div class="col s12" style="padding-top:8px;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" id="httpMode" class="filled-in" />
+                        <span style="color:#eee;">
+                            HTTP-Modus (kein SSL) — für Apache-Reverse-Proxy mit SSL-Terminierung
+                        </span>
+                    </label>
+                    <p style="color:#666;font-size:0.78rem;margin:4px 0 0 26px;">
+                        Aktivieren wenn Apache/nginx die HTTPS-Verbindung übernimmt (z.B. iosync.thestealth.de → localhost:7443).
+                        Die SSL-Felder unten werden dann ignoriert.
+                    </p>
+                </div>
+            </div>
+            <div id="ssl-fields">
+            <p style="color:#666;font-size:0.8rem;margin-top:4px;">
                 Leer lassen für automatisches selbstsigniertes Zertifikat (wird einmalig generiert und gespeichert).
             </p>
             <div class="row">
@@ -315,6 +415,7 @@
                     <label for="apiSslKeyPath">Pfad zum SSL-Schlüssel (.key / .pem)</label>
                 </div>
             </div>
+            </div>
 
             <div style="margin-top:4px;padding:8px 12px;background:#111;border-radius:6px;font-size:0.8rem;color:#888;">
                 <strong style="color:#eaff00;">API-Endpunkte:</strong>
@@ -324,6 +425,18 @@
                 <code style="color:#ccc;">GET /api/health</code>
                 <br/>
                 <span style="color:#666;">Authentifizierung: HTTP Basic Auth mit Benutzername &amp; Passwort</span>
+            </div>
+
+            <div class="section-title">Updates via GitHub</div>
+            <div class="github-info">
+                Adapter-Updates werden über GitHub bereitgestellt. Um auf die neueste Version zu aktualisieren,
+                führe folgenden Befehl auf dem ioBroker-Server aus:
+                <br/>
+                <code>iobroker url thestealth131205/ioBroker.iosync</code>
+                <br/><br/>
+                GitHub-Repository:
+                <a href="https://github.com/thestealth131205/ioBroker.iosync" target="_blank"
+                   style="color:#eaff00;">github.com/thestealth131205/ioBroker.iosync</a>
             </div>
         </div>
     </div>
@@ -345,7 +458,7 @@
                             <th class="col-id">
                                 ioBroker-ID
                                 <span style="font-weight:normal;color:#666;text-transform:none;font-size:0.7rem;">
-                                    — klicke auf das Suchsymbol
+                                    — klicke auf &#128269; um den Datenpunktbaum zu öffnen
                                 </span>
                             </th>
                             <th class="col-alias">Anzeigename (Alias)</th>
@@ -380,22 +493,35 @@
 
 </div><!-- /main -->
 
+<!-- ═══ Speichern-Leiste ══════════════════════════════════════════════════ -->
+<div id="save-bar">
+    <span id="save-status"></span>
+    <button id="btn-save-manual">Speichern</button>
+</div>
+
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
 // Hilfsfunktionen
 // ─────────────────────────────────────────────────────────────────────────────
 
 let _onChange = null;
-let _pendingSearchRow = null;  // Zeilen-Index der wartenden Suche
+let _pendingSearchRow = null;
 
 function triggerChange() {
     if (_onChange) _onChange();
 }
 
 function getAdapterInstance() {
-    // ioBroker admin übergibt die Instanznummer als URL-Parameter
     const m = location.search.match(/[?&]instance=(\d+)/);
     return m ? parseInt(m[1]) : 0;
+}
+
+function escHtml(s) {
+    return String(s)
+        .replace(/&/g,  '&amp;')
+        .replace(/</g,  '&lt;')
+        .replace(/>/g,  '&gt;')
+        .replace(/"/g,  '&quot;');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -405,11 +531,9 @@ function getAdapterInstance() {
 function renderDpTable(dataPoints) {
     const tbody = document.getElementById('dp-tbody');
     tbody.innerHTML = '';
-
     (dataPoints || []).forEach((dp, idx) => {
         tbody.appendChild(createDpRow(dp.id || '', dp.alias || '', dp.intervalSec || 30, idx));
     });
-
     updateEmptyHint();
 }
 
@@ -423,7 +547,7 @@ function createDpRow(id, alias, intervalSec, idx) {
                 <input type="text" class="dp-id" value="${escHtml(id)}"
                        placeholder="z.B. hm-rpc.0.device.TEMPERATURE"
                        style="flex:1;" />
-                <button class="btn-search-dp" title="Datenpunkt suchen"
+                <button class="btn-search-dp" title="Datenpunktbaum öffnen"
                         style="background:none;border:1px solid #333;border-radius:4px;
                                color:#eaff00;padding:4px 7px;cursor:pointer;font-size:0.9rem;
                                white-space:nowrap;">&#128269;</button>
@@ -442,13 +566,11 @@ function createDpRow(id, alias, intervalSec, idx) {
         </td>
     `;
 
-    // Änderungs-Listener
     tr.querySelectorAll('input').forEach(inp => {
         inp.addEventListener('change', triggerChange);
         inp.addEventListener('input',  triggerChange);
     });
 
-    // Löschen
     tr.querySelector('.btn-del').addEventListener('click', () => {
         tr.remove();
         reIndexRows();
@@ -456,10 +578,9 @@ function createDpRow(id, alias, intervalSec, idx) {
         triggerChange();
     });
 
-    // Suchen
     tr.querySelector('.btn-search-dp').addEventListener('click', () => {
         _pendingSearchRow = tr;
-        openSearchModal();
+        openBrowserModal();
     });
 
     return tr;
@@ -472,7 +593,7 @@ function reIndexRows() {
 }
 
 function updateEmptyHint() {
-    const rows  = document.querySelectorAll('#dp-tbody tr').length;
+    const rows = document.querySelectorAll('#dp-tbody tr').length;
     document.getElementById('dp-empty').style.display = rows === 0 ? 'block' : 'none';
 }
 
@@ -489,89 +610,224 @@ function collectDataPoints() {
     return result;
 }
 
-function escHtml(s) {
-    return String(s)
-        .replace(/&/g,  '&amp;')
-        .replace(/</g,  '&lt;')
-        .replace(/>/g,  '&gt;')
-        .replace(/"/g,  '&quot;');
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// Such-Modal
+// Datenpunkt-Browser
 // ─────────────────────────────────────────────────────────────────────────────
 
-function openSearchModal() {
+let _browserStates  = null;   // null = noch nicht geladen
+let _browserLoading = false;
+let _filterTimer    = null;
+let _collapsedNs    = {};     // namespace → true wenn zugeklappt
+
+function openBrowserModal() {
     document.getElementById('search-modal').classList.add('open');
-    document.getElementById('search-pattern').focus();
+    setTimeout(() => document.getElementById('search-pattern').focus(), 60);
+
+    if (_browserStates === null && !_browserLoading) {
+        loadBrowserStates();
+    } else if (_browserStates !== null) {
+        renderBrowser(document.getElementById('search-pattern').value || '');
+    }
 }
 
-function closeSearchModal() {
+function closeBrowserModal() {
     document.getElementById('search-modal').classList.remove('open');
     _pendingSearchRow = null;
 }
 
-document.getElementById('btn-close-search').addEventListener('click', closeSearchModal);
+document.getElementById('btn-close-search').addEventListener('click', closeBrowserModal);
 document.getElementById('search-modal').addEventListener('click', function(e) {
-    if (e.target === this) closeSearchModal();
+    if (e.target === this) closeBrowserModal();
 });
 
-document.getElementById('search-pattern').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') doSearch();
+document.getElementById('search-pattern').addEventListener('input', function() {
+    clearTimeout(_filterTimer);
+    _filterTimer = setTimeout(() => {
+        if (_browserStates !== null) renderBrowser(this.value);
+    }, 180);
 });
 
-document.getElementById('btn-do-search').addEventListener('click', doSearch);
+// ── Laden aller ioBroker-States ───────────────────────────────────────────
 
-function doSearch() {
-    const pattern = document.getElementById('search-pattern').value.trim() || '*';
-    const resultsDiv = document.getElementById('search-results');
-    resultsDiv.innerHTML = '<div id="search-empty">Suche läuft…</div>';
+function loadBrowserStates() {
+    _browserLoading = true;
+    showBrowserLoading('Datenpunkte werden geladen…');
 
-    // Nachricht an den Adapter senden
-    const instance = getAdapterInstance();
-    const cmd = 'iosync.' + instance;
+    function onLoaded(states) {
+        _browserLoading = false;
+        _browserStates  = states.sort((a, b) => a.id.localeCompare(b.id));
+        document.getElementById('browser-count').textContent = _browserStates.length + ' Datenpunkte';
+        renderBrowser(document.getElementById('search-pattern').value || '');
+    }
 
-    function handleResults(data) {
-        const results = (data && data.results) || [];
-        resultsDiv.innerHTML = '';
+    // Primär: socket.emit('getObjectView', ...) — direkte Admin-API
+    const sock = (typeof socket !== 'undefined') ? socket : null;
+    if (sock && typeof sock.emit === 'function') {
+        sock.emit('getObjectView', 'system', 'state', { startkey: '', endkey: '\u9999' }, function(err, res) {
+            if (!err && res && res.rows && res.rows.length > 0) {
+                const states = res.rows.map(row => {
+                    const o      = row.value;
+                    const rawNm  = o && o.common && o.common.name;
+                    const name   = rawNm && typeof rawNm === 'object'
+                        ? (rawNm.de || rawNm.en || '')
+                        : (rawNm || '');
+                    const id = row.id;
+                    return {
+                        id,
+                        name:  String(name) !== id ? String(name) : '',
+                        unit:  (o && o.common && o.common.unit)  || '',
+                        type:  (o && o.common && o.common.type)  || 'mixed'
+                    };
+                });
+                onLoaded(states);
+            } else {
+                // Fallback über Adapter-sendTo
+                fallbackLoadStates(onLoaded);
+            }
+        });
+    } else {
+        fallbackLoadStates(onLoaded);
+    }
+}
 
-        if (results.length === 0) {
-            resultsDiv.innerHTML = '<div id="search-empty">Keine Datenpunkte gefunden.</div>';
-            return;
+function fallbackLoadStates(onLoaded) {
+    const cmd = 'iosync.' + getAdapterInstance();
+
+    function handle(data) {
+        if (data && Array.isArray(data.results)) {
+            onLoaded(data.results.map(r => ({
+                id:   r.id,
+                name: r.name !== r.id ? (r.name || '') : '',
+                unit: r.unit || '',
+                type: r.type || 'mixed'
+            })));
+        } else {
+            _browserLoading = false;
+            showBrowserLoading(
+                'Datenpunkte konnten nicht geladen werden.<br/>' +
+                '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
+            );
         }
+    }
 
-        results.forEach(item => {
+    if (typeof sendTo === 'function') {
+        sendTo(cmd, 'searchStates', { pattern: '*' }, handle);
+    } else {
+        const sock = (typeof socket !== 'undefined') ? socket : null;
+        if (sock && typeof sock.emit === 'function') {
+            sock.emit('sendTo', cmd, 'searchStates', { pattern: '*' }, handle);
+        } else {
+            _browserLoading = false;
+            showBrowserLoading(
+                'Admin-API nicht erreichbar.<br/>' +
+                '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
+            );
+        }
+    }
+}
+
+function showBrowserLoading(msg) {
+    document.getElementById('search-results').innerHTML =
+        '<div id="browser-loading">' + msg + '</div>';
+}
+
+// ── Rendern des Datenpunktbaums ───────────────────────────────────────────
+
+function renderBrowser(filter) {
+    if (!_browserStates) return;
+
+    const resultsDiv = document.getElementById('search-results');
+    const f = filter.toLowerCase().trim();
+
+    const filtered = f
+        ? _browserStates.filter(s =>
+              s.id.toLowerCase().includes(f) ||
+              s.name.toLowerCase().includes(f)
+          )
+        : _browserStates;
+
+    resultsDiv.innerHTML = '';
+
+    if (filtered.length === 0) {
+        resultsDiv.innerHTML =
+            '<div style="padding:24px;text-align:center;color:#666;">Keine Datenpunkte gefunden.</div>';
+        return;
+    }
+
+    // Gruppieren nach Namespace (erste 2 Segmente)
+    const groups = new Map();
+    filtered.forEach(item => {
+        const parts = item.id.split('.');
+        const ns    = parts.length >= 2 ? parts[0] + '.' + parts[1] : parts[0];
+        if (!groups.has(ns)) groups.set(ns, []);
+        groups.get(ns).push(item);
+    });
+
+    const MAX_UNFILTERED = 80;
+    const frag = document.createDocumentFragment();
+
+    for (const [ns, items] of groups.entries()) {
+        const collapsed  = !f && !!_collapsedNs[ns];
+        const nsEl = document.createElement('div');
+        nsEl.className = 'ns-header';
+        nsEl.innerHTML =
+            '<span>' + escHtml(ns) + '</span>' +
+            '<span class="ns-count">' +
+                (collapsed ? '▶ ' : '▼ ') + items.length +
+            '</span>';
+        frag.appendChild(nsEl);
+
+        const itemsWrap = document.createElement('div');
+        itemsWrap.className = 'ns-items' + (collapsed ? ' collapsed' : '');
+        frag.appendChild(itemsWrap);
+
+        // Namespace-Header klappbar
+        nsEl.addEventListener('click', () => {
+            const isCollapsed = itemsWrap.classList.toggle('collapsed');
+            _collapsedNs[ns] = isCollapsed;
+            const cntEl = nsEl.querySelector('.ns-count');
+            cntEl.textContent = (isCollapsed ? '▶ ' : '▼ ') + items.length;
+        });
+
+        const display = (!f && items.length > MAX_UNFILTERED) ? items.slice(0, MAX_UNFILTERED) : items;
+        display.forEach(item => {
             const div = document.createElement('div');
             div.className = 'search-item';
-            div.innerHTML = `
-                <span class="search-item-id">${escHtml(item.id)}</span>
-                <span class="search-item-name">${escHtml(item.name !== item.id ? item.name : '')}</span>
-                <span class="search-item-unit">${escHtml(item.unit)}</span>
-            `;
-            div.addEventListener('click', () => {
-                if (_pendingSearchRow) {
-                    _pendingSearchRow.querySelector('.dp-id').value    = item.id;
-                    // Alias vorbelegen wenn leer
-                    const aliasInput = _pendingSearchRow.querySelector('.dp-alias');
-                    if (!aliasInput.value.trim()) {
-                        aliasInput.value = item.name || item.id.split('.').pop();
-                    }
-                    triggerChange();
-                }
-                closeSearchModal();
-            });
-            resultsDiv.appendChild(div);
+            div.innerHTML =
+                '<span class="search-item-id">'   + escHtml(item.id)   + '</span>' +
+                '<span class="search-item-name">'  + (item.name ? escHtml(item.name) : '') + '</span>' +
+                '<span class="search-item-unit">'  + escHtml(item.unit) + '</span>';
+            div.addEventListener('click', () => selectBrowserItem(item));
+            itemsWrap.appendChild(div);
         });
+
+        if (!f && items.length > MAX_UNFILTERED) {
+            const more = document.createElement('div');
+            more.className = 'browser-more';
+            more.textContent = '… ' + (items.length - MAX_UNFILTERED) + ' weitere — Filter eingeben um alle anzuzeigen';
+            itemsWrap.appendChild(more);
+        }
     }
 
-    // Versuche sendTo über verschiedene Admin-APIs
-    if (typeof sendTo === 'function') {
-        sendTo(cmd, 'searchStates', { pattern }, handleResults);
-    } else if (typeof socket !== 'undefined' && socket.emit) {
-        socket.emit('sendTo', cmd, 'searchStates', { pattern }, handleResults);
-    } else {
-        resultsDiv.innerHTML = '<div id="search-empty">Suche nicht verfügbar (Admin-API nicht erreichbar). Bitte ID manuell eingeben.</div>';
+    const footer = document.createElement('div');
+    footer.className = 'browser-footer';
+    footer.textContent = filtered.length + ' Datenpunkte' +
+        (f && filtered.length < _browserStates.length ? ' (von ' + _browserStates.length + ' gesamt)' : '');
+    frag.appendChild(footer);
+
+    resultsDiv.appendChild(frag);
+}
+
+function selectBrowserItem(item) {
+    if (_pendingSearchRow) {
+        _pendingSearchRow.querySelector('.dp-id').value = item.id;
+        const aliasInp = _pendingSearchRow.querySelector('.dp-alias');
+        if (!aliasInp.value.trim()) {
+            aliasInp.value = item.name || item.id.split('.').pop();
+        }
+        triggerChange();
     }
+    closeBrowserModal();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -582,23 +838,28 @@ document.getElementById('btn-test-api').addEventListener('click', () => {
     const statusEl = document.getElementById('api-status');
     statusEl.textContent = 'Prüfe…';
 
-    const instance = getAdapterInstance();
-    const cmd = 'iosync.' + instance;
-
-    function handleApiStatus(data) {
+    const cmd = 'iosync.' + getAdapterInstance();
+    function handle(data) {
         if (data && data.running) {
-            statusEl.innerHTML = `<span class="status-badge badge-ok">&#10003; Läuft (Port ${data.port}, ${data.cacheSize} Punkte)</span>`;
+            statusEl.innerHTML =
+                '<span class="status-badge badge-ok">&#10003; Läuft (Port ' +
+                data.port + ', ' + data.cacheSize + ' Punkte)</span>';
         } else {
-            statusEl.innerHTML = `<span class="status-badge badge-err">&#10005; Nicht aktiv</span>`;
+            statusEl.innerHTML =
+                '<span class="status-badge badge-err">&#10005; Nicht aktiv</span>';
         }
     }
 
     if (typeof sendTo === 'function') {
-        sendTo(cmd, 'testApi', {}, handleApiStatus);
-    } else if (typeof socket !== 'undefined' && socket.emit) {
-        socket.emit('sendTo', cmd, 'testApi', {}, handleApiStatus);
+        sendTo(cmd, 'testApi', {}, handle);
     } else {
-        statusEl.innerHTML = '<span class="status-badge badge-err">Admin-API nicht verfügbar</span>';
+        const sock = (typeof socket !== 'undefined') ? socket : null;
+        if (sock && sock.emit) {
+            sock.emit('sendTo', cmd, 'testApi', {}, handle);
+        } else {
+            statusEl.innerHTML =
+                '<span class="status-badge badge-err">Admin-API nicht verfügbar</span>';
+        }
     }
 });
 
@@ -610,10 +871,8 @@ document.getElementById('btn-preview').addEventListener('click', () => {
     const box = document.getElementById('preview-box');
     box.textContent = 'Lade…';
 
-    const instance = getAdapterInstance();
-    const cmd = 'iosync.' + instance;
-
-    function handlePreview(data) {
+    const cmd = 'iosync.' + getAdapterInstance();
+    function handle(data) {
         if (!data || !data.datapoints || data.datapoints.length === 0) {
             box.textContent = 'Keine Daten im Cache (Adapter läuft möglicherweise nicht).';
             return;
@@ -622,11 +881,14 @@ document.getElementById('btn-preview').addEventListener('click', () => {
     }
 
     if (typeof sendTo === 'function') {
-        sendTo(cmd, 'getCachePreview', {}, handlePreview);
-    } else if (typeof socket !== 'undefined' && socket.emit) {
-        socket.emit('sendTo', cmd, 'getCachePreview', {}, handlePreview);
+        sendTo(cmd, 'getCachePreview', {}, handle);
     } else {
-        box.textContent = 'Admin-API nicht verfügbar.';
+        const sock = (typeof socket !== 'undefined') ? socket : null;
+        if (sock && sock.emit) {
+            sock.emit('sendTo', cmd, 'getCachePreview', {}, handle);
+        } else {
+            box.textContent = 'Admin-API nicht verfügbar.';
+        }
     }
 });
 
@@ -640,6 +902,51 @@ document.getElementById('btn-add-dp').addEventListener('click', () => {
     tbody.appendChild(createDpRow('', '', 30, idx));
     updateEmptyHint();
     triggerChange();
+
+    // Beim ersten Hinzufügen direkt Browser öffnen
+    const newRow = tbody.lastElementChild;
+    _pendingSearchRow = newRow;
+    openBrowserModal();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Manueller Speichern-Button
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-save-manual').addEventListener('click', function() {
+    const btn      = this;
+    const statusEl = document.getElementById('save-status');
+
+    btn.disabled    = true;
+    btn.textContent = 'Speichern…';
+    statusEl.innerHTML = '';
+
+    save(function(settings) {
+        const instance  = getAdapterInstance();
+        const adapterId = 'system.adapter.iosync.' + instance;
+
+        function onDone(err) {
+            btn.disabled    = false;
+            btn.textContent = 'Speichern';
+            if (err) {
+                statusEl.innerHTML =
+                    '<span style="color:#e53935;">Fehler: ' + escHtml(String(err)) + '</span>';
+            } else {
+                statusEl.innerHTML =
+                    '<span style="color:#4caf50;">&#10003; Gespeichert</span>';
+                setTimeout(() => { statusEl.textContent = ''; }, 3000);
+            }
+        }
+
+        const sock = (typeof socket !== 'undefined') ? socket : null;
+        if (sock && typeof sock.emit === 'function') {
+            sock.emit('extendObject', adapterId, { native: settings }, onDone);
+        } else {
+            // Fallback: onChange aufrufen damit der Admin seinen Speichern-Button zeigt
+            if (_onChange) _onChange();
+            onDone(null);
+        }
+    });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -648,23 +955,20 @@ document.getElementById('btn-add-dp').addEventListener('click', () => {
 
 function load(settings, onChange) {
     _onChange = onChange;
-
     if (!settings) settings = {};
 
-    // API-Felder
-    document.getElementById('apiPort').value       = settings.apiPort       || 7443;
-    document.getElementById('apiUsername').value   = settings.apiUsername   || '';
-    document.getElementById('apiPassword').value   = settings.apiPassword   || '';
+    document.getElementById('apiPort').value        = settings.apiPort        || 7443;
+    document.getElementById('apiUsername').value    = settings.apiUsername    || '';
+    document.getElementById('apiPassword').value    = settings.apiPassword    || '';
     document.getElementById('apiSslCertPath').value = settings.apiSslCertPath || '';
     document.getElementById('apiSslKeyPath').value  = settings.apiSslKeyPath  || '';
+    document.getElementById('httpMode').checked     = !!settings.httpMode;
+    updateSslFieldsVisibility();
 
-    // Datenpunkte
     renderDpTable(settings.dataPoints || []);
 
-    // Materialize Labels aktivieren
     if (typeof M !== 'undefined') M.updateTextFields();
 
-    // Änderungs-Listener für einfache Felder
     ['apiPort','apiUsername','apiPassword','apiSslCertPath','apiSslKeyPath'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -672,6 +976,16 @@ function load(settings, onChange) {
             el.addEventListener('input',  onChange);
         }
     });
+
+    document.getElementById('httpMode').addEventListener('change', function() {
+        updateSslFieldsVisibility();
+        onChange();
+    });
+}
+
+function updateSslFieldsVisibility() {
+    const httpMode = document.getElementById('httpMode').checked;
+    document.getElementById('ssl-fields').style.display = httpMode ? 'none' : 'block';
 }
 
 function save(callback) {
@@ -681,6 +995,7 @@ function save(callback) {
         apiPassword:    document.getElementById('apiPassword').value,
         apiSslCertPath: document.getElementById('apiSslCertPath').value.trim(),
         apiSslKeyPath:  document.getElementById('apiSslKeyPath').value.trim(),
+        httpMode:       document.getElementById('httpMode').checked,
         dataPoints:     collectDataPoints()
     });
 }

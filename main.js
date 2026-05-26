@@ -276,24 +276,34 @@ class IoSyncAdapter extends utils.Adapter {
             res.status(404).json({ error: 'Endpunkt nicht gefunden' });
         });
 
-        // ── SSL laden / generieren ────────────────────────────────────────
-        try {
-            const sslCreds = await this.loadOrGenerateSsl();
-            this.apiServer = https.createServer(sslCreds, app);
-            this.apiServer.listen(port, () => {
-                this.log.info(`HTTPS-API läuft auf Port ${port}`);
-                this.setStateAsync('info.connection', { val: true, ack: true });
-                this.setStateAsync('info.apiPort',    { val: port, ack: true });
-            });
-        } catch (err) {
-            this.log.error(`HTTPS konnte nicht gestartet werden: ${err.message}`);
-            this.log.warn('Fallback: HTTP-Server ohne SSL…');
+        // ── HTTP-Modus oder SSL ───────────────────────────────────────────
+        if (this.config.httpMode) {
+            this.log.info('HTTP-Modus aktiv (kein SSL) — Apache übernimmt TLS-Terminierung');
             this.apiServer = http.createServer(app);
             this.apiServer.listen(port, () => {
-                this.log.warn(`HTTP-API (kein SSL) läuft auf Port ${port}`);
+                this.log.info(`HTTP-API läuft auf Port ${port}`);
                 this.setStateAsync('info.connection', { val: true, ack: true });
                 this.setStateAsync('info.apiPort',    { val: port, ack: true });
             });
+        } else {
+            try {
+                const sslCreds = await this.loadOrGenerateSsl();
+                this.apiServer = https.createServer(sslCreds, app);
+                this.apiServer.listen(port, () => {
+                    this.log.info(`HTTPS-API läuft auf Port ${port}`);
+                    this.setStateAsync('info.connection', { val: true, ack: true });
+                    this.setStateAsync('info.apiPort',    { val: port, ack: true });
+                });
+            } catch (err) {
+                this.log.error(`HTTPS konnte nicht gestartet werden: ${err.message}`);
+                this.log.warn('Fallback: HTTP-Server ohne SSL…');
+                this.apiServer = http.createServer(app);
+                this.apiServer.listen(port, () => {
+                    this.log.warn(`HTTP-API (kein SSL, Fallback) läuft auf Port ${port}`);
+                    this.setStateAsync('info.connection', { val: true, ack: true });
+                    this.setStateAsync('info.apiPort',    { val: port, ack: true });
+                });
+            }
         }
 
         this.apiServer.on('error', (err) => {

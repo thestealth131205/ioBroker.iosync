@@ -1,8 +1,20 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.1.0",
+    "version": "2.4.0",
     "news": {
+      "2.4.0": {
+        "en": "New: ioBroker datapoint tree browser in admin UI, explicit save button, GitHub update URL.",
+        "de": "Neu: ioBroker-Datenpunktbaum im Admin-UI, expliziter Speichern-Button, GitHub-Update-URL."
+      },
+      "2.3.0": {
+        "en": "Fix: Input field text color corrected — dark text on white Materialize fields for better readability.",
+        "de": "Fix: Textfarbe in Eingabefeldern korrigiert — dunkler Text auf weißen Materialize-Feldern für bessere Lesbarkeit."
+      },
+      "2.2.0": {
+        "en": "New: HTTP mode for reverse proxy setups (e.g. Apache/nginx handles TLS). Toggle in admin UI under SSL settings.",
+        "de": "Neu: HTTP-Modus für Reverse-Proxy-Setups (z.B. Apache/nginx übernimmt TLS). Umschalter in der Admin-UI unter SSL-Einstellungen."
+      },
       "2.1.0": {
         "en": "New: POST /api/setState — Android app can now write ioBroker data points via the adapter. Added GET /api/state/:id for direct reads.",
         "de": "Neu: POST /api/setState — Android-App kann jetzt ioBroker-Datenpunkte über den Adapter schreiben. GET /api/state/:id für Direktabfragen hinzugefügt."
@@ -43,7 +55,9 @@
       { "js-controller": ">=5.0.0" }
     ],
     "globalDependencies": [],
-    "readme": "https://github.com/your-org/ioBroker.iosync",
+    "readme": "https://github.com/thestealth131205/ioBroker.iosync",
+    "extIcon": "https://raw.githubusercontent.com/thestealth131205/ioBroker.iosync/main/admin/iosync.png",
+    "githubUrl": "https://github.com/thestealth131205/ioBroker.iosync",
     "connectionType": "local",
     "dataSource": "pull"
   },
@@ -53,6 +67,7 @@
     "apiPassword": "",
     "apiSslCertPath": "",
     "apiSslKeyPath": "",
+    "httpMode": false,
     "dataPoints": []
   },
   "objects": [],

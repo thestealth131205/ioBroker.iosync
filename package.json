@@ -1,6 +1,6 @@
 {
   "name": "iobroker.iosync",
-  "version": "2.0.0",
+  "version": "2.4.0",
   "description": "ioBroker adapter that exposes selected data points via a secure HTTPS API for smartwatches and other apps",
   "author": {
     "name": "IoSync",
@@ -17,10 +17,10 @@
     "broker",
     "iosync"
   ],
-  "homepage": "https://github.com/your-org/ioBroker.iosync",
+  "homepage": "https://github.com/thestealth131205/ioBroker.iosync",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-org/ioBroker.iosync"
+    "url": "https://github.com/thestealth131205/ioBroker.iosync"
   },
   "main": "main.js",
   "engines": {
@@ -41,7 +41,7 @@
     "eslint": "^8.57.0"
   },
   "bugs": {
-    "url": "https://github.com/your-org/ioBroker.iosync/issues"
+    "url": "https://github.com/thestealth131205/ioBroker.iosync/issues"
   },
   "readmeFilename": "README.md"
 }
