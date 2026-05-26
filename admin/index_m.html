@@ -1008,6 +1008,14 @@ function doSave(closeAfter) {
         const instance  = getAdapterInstance();
         const adapterId = 'system.adapter.iosync.' + instance;
 
+        function doClose() {
+            // Admin 6 (React) erwartet ein Objekt, Admin 5 einen String
+            try { window.parent.postMessage({ command: 'close' }, '*'); } catch(e) {}
+            try { window.parent.postMessage('close', '*'); } catch(e) {}
+            try { window.parent.history.back(); } catch(e) {}
+            try { window.close(); } catch(e) {}
+        }
+
         function onDone(err) {
             btnSave.disabled      = false;
             btnSaveClose.disabled = false;
@@ -1016,9 +1024,9 @@ function doSave(closeAfter) {
                     '<span style="color:#e53935;">Fehler: ' + escHtml(String(err)) + '</span>';
             } else {
                 statusEl.innerHTML =
-                    '<span style="color:#4caf50;">&#10003; Gespeichert</span>';
+                    '<span style="color:#4caf50;">&#10003; Gespeichert — Adapter wird neu gestartet…</span>';
                 if (closeAfter) {
-                    setTimeout(() => { try { window.parent.postMessage('close', '*'); } catch(e) {} window.close(); }, 800);
+                    setTimeout(doClose, 800);
                 } else {
                     setTimeout(() => { statusEl.textContent = ''; }, 3000);
                 }
@@ -1035,7 +1043,19 @@ function doSave(closeAfter) {
                 return;
             }
             if (sock && typeof sock.emit === 'function') {
-                sock.emit('extendObject', adapterId, { native: settings }, onDone);
+                // Native-Einstellungen speichern → ioBroker startet Adapter automatisch neu
+                sock.emit('extendObject', adapterId, { native: settings }, function(err) {
+                    if (!err) {
+                        // Expliziter Neustart: enabled toggle falls Controller keinen Auto-Restart macht
+                        sock.emit('extendObject', adapterId, { common: { enabled: false } }, function() {
+                            setTimeout(function() {
+                                sock.emit('extendObject', adapterId, { common: { enabled: true } }, onDone);
+                            }, 1500);
+                        });
+                    } else {
+                        onDone(err);
+                    }
+                });
             } else {
                 // 2. Versuch: REST-Endpunkt des Adapters direkt
                 const port     = parseInt(document.getElementById('apiPort').value) || 7443;

@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.5.8",
+    "version": "2.5.9",
     "news": {
       "2.5.8": {
         "en": "Fix: messagebox enabled so sendTo/getObjectTree works in admin UI.",
@@ -42,6 +42,10 @@
       "1.0.0": {
         "en": "Initial release — pushes ioBroker states to IoSync Android app via HTTP/WebSocket.",
         "de": "Erstveröffentlichung — sendet ioBroker-Datenpunkte per HTTP/WebSocket an die IoSync-Android-App."
+      },
+      "2.5.9": {
+        "en": "Fix: Config dialog now closes correctly after saving; adapter restart triggered reliably.",
+        "de": "Fix: Konfigurations-Dialog schließt sich nach dem Speichern korrekt; Adapter-Neustart wird zuverlässig ausgelöst."
       }
     },
     "title": "IoSync Data Point Broker",
@@ -53,8 +57,18 @@
       "en": "Exposes selected ioBroker data points via a secure HTTPS API. Smartwatches and other apps can pull data on configurable intervals with Basic Auth protection.",
       "de": "Stellt ausgewählte ioBroker-Datenpunkte über eine sichere HTTPS-API bereit. Smartwatches und andere Apps können Daten in konfigurierbaren Intervallen mit Basic-Auth-Schutz abrufen."
     },
-    "authors": ["IoSync <dev@iosync.local>"],
-    "keywords": ["android", "smartwatch", "smart home", "api", "https", "iosync", "broker"],
+    "authors": [
+      "IoSync <dev@iosync.local>"
+    ],
+    "keywords": [
+      "android",
+      "smartwatch",
+      "smart home",
+      "api",
+      "https",
+      "iosync",
+      "broker"
+    ],
     "license": "MIT",
     "platform": "Javascript/Node.js",
     "main": "main.js",
@@ -70,14 +84,17 @@
     "supportMessages": true,
     "loglevel": "info",
     "dependencies": [
-      { "js-controller": ">=5.0.0" }
+      {
+        "js-controller": ">=5.0.0"
+      }
     ],
     "globalDependencies": [],
     "readme": "https://github.com/thestealth131205/ioBroker.iosync",
     "extIcon": "https://raw.githubusercontent.com/thestealth131205/ioBroker.iosync/main/admin/iosync.png",
     "githubUrl": "https://github.com/thestealth131205/ioBroker.iosync",
     "connectionType": "local",
-    "dataSource": "pull"
+    "dataSource": "pull",
+    "installedFrom": "thestealth131205/ioBroker.iosync"
   },
   "native": {
     "apiPort": 7443,
@@ -93,7 +110,9 @@
     {
       "_id": "info",
       "type": "channel",
-      "common": { "name": "Informationen" },
+      "common": {
+        "name": "Informationen"
+      },
       "native": {}
     },
     {
@@ -101,7 +120,10 @@
       "type": "state",
       "common": {
         "role": "indicator.connected",
-        "name": { "en": "HTTPS API running", "de": "HTTPS-API läuft" },
+        "name": {
+          "en": "HTTPS API running",
+          "de": "HTTPS-API läuft"
+        },
         "type": "boolean",
         "read": true,
         "write": false,
@@ -114,7 +136,10 @@
       "type": "state",
       "common": {
         "role": "value",
-        "name": { "en": "API port", "de": "API-Port" },
+        "name": {
+          "en": "API port",
+          "de": "API-Port"
+        },
         "type": "number",
         "read": true,
         "write": false,
