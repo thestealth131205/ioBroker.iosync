@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.5.6",
+    "version": "2.5.7",
     "news": {
+      "2.5.7": {
+        "en": "Fix: Datapoint browser now uses getForeignObjectsAsync for reliable loading; REST fallback added when adapter is stopped.",
+        "de": "Fix: Datenpunktbaum nutzt jetzt getForeignObjectsAsync für zuverlässiges Laden; REST-Fallback wenn Adapter gestoppt ist."
+      },
       "2.5.6": {
         "en": "Fix: Memory bug fixed.",
         "de": "Fix: Speicher-Bug behoben."

@@ -745,6 +745,28 @@ function _doLoadBrowserStates(sock) {
     }
 
     function showFailed() {
+        // Letzter Fallback: REST-Endpunkt des Adapters direkt befragen
+        const port     = parseInt(document.getElementById('apiPort').value) || 7443;
+        const httpMode = document.getElementById('httpMode').checked;
+        const user     = document.getElementById('apiUsername').value.trim();
+        const pass     = document.getElementById('apiPassword').value;
+        const baseUrl  = (httpMode ? 'http' : 'https') + '://localhost:' + port;
+        const headers  = {};
+        if (user && pass) headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
+
+        fetch(baseUrl + '/api/stateObjects', { headers })
+            .then(r => r.json())
+            .then(data => {
+                if (data && Array.isArray(data.results) && data.results.length > 0) {
+                    onLoaded(data.results);
+                } else {
+                    showBrowserError();
+                }
+            })
+            .catch(() => showBrowserError());
+    }
+
+    function showBrowserError() {
         _browserLoading = false;
         showBrowserLoading(
             'Datenpunkte konnten nicht geladen werden.<br/>' +

@@ -425,28 +425,24 @@ class IoSyncAdapter extends utils.Adapter {
 
         switch (obj.command) {
 
-            // Vollständiger Objektbaum via getObjectViewAsync (Admin-UI Datenpunkt-Browser)
+            // Vollständiger Objektbaum via getForeignObjectsAsync (Admin-UI Datenpunkt-Browser)
             case 'getObjectTree': {
-                this.getObjectViewAsync('system', 'state', { startkey: '', endkey: '\u9999' })
-                    .then(result => {
+                this.getForeignObjectsAsync('*', 'state')
+                    .then(objects => {
                         const results = [];
-                        if (result && result.rows) {
-                            for (const row of result.rows) {
-                                const id = row.id;
-                                const o  = row.value;
-                                if (!o || !o.common) continue;
-                                const rawName = o.common.name;
-                                const name = rawName && typeof rawName === 'object'
-                                    ? (rawName.de || rawName.en || id)
-                                    : (rawName || id);
-                                results.push({
-                                    id,
-                                    name: String(name) !== id ? String(name) : '',
-                                    unit: o.common.unit || '',
-                                    type: o.common.type || 'mixed',
-                                    role: o.common.role || ''
-                                });
-                            }
+                        for (const [id, o] of Object.entries(objects || {})) {
+                            if (!o || !o.common) continue;
+                            const rawName = o.common.name;
+                            const name = rawName && typeof rawName === 'object'
+                                ? (rawName.de || rawName.en || id)
+                                : (rawName || id);
+                            results.push({
+                                id,
+                                name: String(name) !== id ? String(name) : '',
+                                unit: o.common.unit || '',
+                                type: o.common.type || 'mixed',
+                                role: o.common.role || ''
+                            });
                         }
                         results.sort((a, b) => a.id.localeCompare(b.id));
                         if (obj.callback) {
