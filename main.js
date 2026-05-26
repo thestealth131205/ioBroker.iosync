@@ -425,6 +425,44 @@ class IoSyncAdapter extends utils.Adapter {
 
         switch (obj.command) {
 
+            // Vollständiger Objektbaum via getObjectViewAsync (Admin-UI Datenpunkt-Browser)
+            case 'getObjectTree': {
+                this.getObjectViewAsync('system', 'state', { startkey: '', endkey: '\u9999' })
+                    .then(result => {
+                        const results = [];
+                        if (result && result.rows) {
+                            for (const row of result.rows) {
+                                const id = row.id;
+                                const o  = row.value;
+                                if (!o || !o.common) continue;
+                                const rawName = o.common.name;
+                                const name = rawName && typeof rawName === 'object'
+                                    ? (rawName.de || rawName.en || id)
+                                    : (rawName || id);
+                                results.push({
+                                    id,
+                                    name: String(name) !== id ? String(name) : '',
+                                    unit: o.common.unit || '',
+                                    type: o.common.type || 'mixed',
+                                    role: o.common.role || ''
+                                });
+                            }
+                        }
+                        results.sort((a, b) => a.id.localeCompare(b.id));
+                        if (obj.callback) {
+                            this.sendTo(obj.from, obj.command,
+                                { results: results.slice(0, 5000) }, obj.callback);
+                        }
+                    })
+                    .catch(err => {
+                        if (obj.callback) {
+                            this.sendTo(obj.from, obj.command,
+                                { error: err.message, results: [] }, obj.callback);
+                        }
+                    });
+                break;
+            }
+
             // ioBroker-Datenpunkte nach Muster suchen
             case 'searchStates': {
                 const pattern = (obj.message && obj.message.pattern) ? obj.message.pattern.trim() : '*';

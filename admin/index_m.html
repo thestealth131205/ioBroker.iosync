@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <title>IoSync Datenpunkt-Broker</title>
     <link rel="stylesheet" href="../../lib/css/materialize.min.css" />
+    <link rel="stylesheet" href="../../lib/css/font-icons.min.css" />
     <style>
         body {
             background: #0d0d0d;
@@ -283,7 +284,7 @@
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            gap: 16px;
+            gap: 10px;
             z-index: 7000;
             box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
         }
@@ -291,20 +292,41 @@
             font-size: 0.82rem;
             min-width: 140px;
             text-align: right;
+            flex: 1;
+        }
+        .save-bar-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: none;
+            border-radius: 4px;
+            padding: 0 16px;
+            height: 36px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.15s;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
         }
         #btn-save-manual {
             background: #eaff00;
             color: #111;
-            border: none;
-            border-radius: 6px;
-            padding: 9px 28px;
-            font-size: 0.9rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: background 0.15s;
         }
         #btn-save-manual:hover  { background: #d4e800; }
         #btn-save-manual:disabled { background: #555; color: #999; cursor: default; }
+        #btn-save-close {
+            background: #2e7d32;
+            color: #fff;
+        }
+        #btn-save-close:hover  { background: #388e3c; }
+        #btn-save-close:disabled { background: #555; color: #999; cursor: default; }
+        #btn-close {
+            background: #333;
+            color: #ccc;
+        }
+        #btn-close:hover { background: #444; }
 
         /* GitHub-Info */
         .github-info {
@@ -496,7 +518,18 @@
 <!-- ═══ Speichern-Leiste ══════════════════════════════════════════════════ -->
 <div id="save-bar">
     <span id="save-status"></span>
-    <button id="btn-save-manual">Speichern</button>
+    <button id="btn-close" class="save-bar-btn">
+        <i class="material-icons" style="font-size:18px;">close</i>
+        Abbrechen
+    </button>
+    <button id="btn-save-close" class="save-bar-btn">
+        <i class="material-icons" style="font-size:18px;">save</i>
+        Speichern &amp; Schließen
+    </button>
+    <button id="btn-save-manual" class="save-bar-btn">
+        <i class="material-icons" style="font-size:18px;">check</i>
+        Speichern
+    </button>
 </div>
 
 <script>
@@ -694,88 +727,65 @@ function _doLoadBrowserStates(sock) {
         renderBrowser(document.getElementById('search-pattern').value || '');
     }
 
-    if (sock && typeof sock.emit === 'function') {
-        sock.emit('getObjectView', 'system', 'state', { startkey: '', endkey: '\u9999' }, function(err, res) {
-            if (!err && res && res.rows && res.rows.length > 0) {
-                const states = res.rows.map(row => {
-                    const o     = row.value;
-                    const rawNm = o && o.common && o.common.name;
-                    const name  = rawNm && typeof rawNm === 'object'
-                        ? (rawNm.de || rawNm.en || '')
-                        : (rawNm || '');
-                    const id = row.id;
-                    return {
-                        id,
-                        name: String(name) !== id ? String(name) : '',
-                        unit: (o && o.common && o.common.unit) || '',
-                        type: (o && o.common && o.common.type) || 'mixed'
-                    };
-                });
-                onLoaded(states);
-            } else {
-                fallbackLoadStates(onLoaded, sock);
-            }
+    function parseRows(rows) {
+        return rows.map(row => {
+            const o     = row.value;
+            const rawNm = o && o.common && o.common.name;
+            const name  = rawNm && typeof rawNm === 'object'
+                ? (rawNm.de || rawNm.en || '')
+                : (rawNm || '');
+            const id = row.id;
+            return {
+                id,
+                name: String(name) !== id ? String(name) : '',
+                unit: (o && o.common && o.common.unit) || '',
+                type: (o && o.common && o.common.type) || 'mixed'
+            };
         });
-    } else {
-        fallbackLoadStates(onLoaded, null);
     }
-}
 
-function fallbackLoadStates(onLoaded, sock) {
-    const cmd = 'iosync.' + getAdapterInstance();
+    function showFailed() {
+        _browserLoading = false;
+        showBrowserLoading(
+            'Datenpunkte konnten nicht geladen werden.<br/>' +
+            '<span style="color:#555;">Stelle sicher, dass der Adapter läuft, oder gib die ID manuell ein.</span>'
+        );
+    }
 
-    function handleSendTo(data) {
-        if (data && Array.isArray(data.results)) {
-            onLoaded(data.results.map(r => ({
-                id:   r.id,
-                name: r.name !== r.id ? (r.name || '') : '',
-                unit: r.unit || '',
-                type: r.type || 'mixed'
-            })));
+    // Fallback: Admin-Socket direkt befragen (getObjectView)
+    function trySocketDirect() {
+        if (sock && typeof sock.emit === 'function') {
+            sock.emit('getObjectView', 'system', 'state', { startkey: '', endkey: '\u9999' }, function(err, res) {
+                if (!err && res && res.rows && res.rows.length > 0) {
+                    onLoaded(parseRows(res.rows));
+                } else {
+                    showFailed();
+                }
+            });
         } else {
-            fetchFallbackStates(onLoaded);
+            showFailed();
         }
     }
 
-    const st = resolveSendTo();
-    if (st) {
-        st(cmd, 'searchStates', { pattern: '*' }, handleSendTo);
-    } else if (sock && typeof sock.emit === 'function') {
-        sock.emit('sendTo', cmd, 'searchStates', { pattern: '*' }, handleSendTo);
-    } else {
-        fetchFallbackStates(onLoaded);
+    // sendTo-Antwort verarbeiten (getObjectTree via Adapter)
+    function handleSendToResult(data) {
+        if (data && Array.isArray(data.results) && data.results.length > 0) {
+            onLoaded(data.results);
+        } else {
+            trySocketDirect();
+        }
     }
-}
 
-function fetchFallbackStates(onLoaded) {
-    const port     = parseInt(document.getElementById('apiPort').value) || 7443;
-    const user     = document.getElementById('apiUsername').value.trim();
-    const pass     = document.getElementById('apiPassword').value;
-    const httpMode = document.getElementById('httpMode').checked;
-    const baseUrl  = (httpMode ? 'http' : 'https') + '://localhost:' + port;
-    const headers  = {};
-    if (user && pass) headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
-
-    fetch(baseUrl + '/api/stateObjects', { headers })
-        .then(r => r.json())
-        .then(data => {
-            if (data && Array.isArray(data.results) && data.results.length > 0) {
-                onLoaded(data.results);
-            } else {
-                _browserLoading = false;
-                showBrowserLoading(
-                    'Datenpunkte konnten nicht geladen werden.<br/>' +
-                    '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
-                );
-            }
-        })
-        .catch(() => {
-            _browserLoading = false;
-            showBrowserLoading(
-                'Datenpunkte konnten nicht geladen werden.<br/>' +
-                '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
-            );
-        });
+    // Primär: sendTo → getObjectTree (nutzt adapter.getObjectViewAsync im Backend)
+    const cmd   = 'iosync.' + getAdapterInstance();
+    const stApi = resolveSendTo();
+    if (stApi) {
+        stApi(cmd, 'getObjectTree', {}, handleSendToResult);
+    } else if (sock && typeof sock.emit === 'function') {
+        sock.emit('sendTo', cmd, 'getObjectTree', {}, handleSendToResult);
+    } else {
+        trySocketDirect();
+    }
 }
 
 function showBrowserLoading(msg) {
@@ -960,31 +970,36 @@ document.getElementById('btn-add-dp').addEventListener('click', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Manueller Speichern-Button
+// Speichern-Buttons
 // ─────────────────────────────────────────────────────────────────────────────
 
-document.getElementById('btn-save-manual').addEventListener('click', function() {
-    const btn      = this;
-    const statusEl = document.getElementById('save-status');
+function doSave(closeAfter) {
+    const btnSave      = document.getElementById('btn-save-manual');
+    const btnSaveClose = document.getElementById('btn-save-close');
+    const statusEl     = document.getElementById('save-status');
 
-    btn.disabled    = true;
-    btn.textContent = 'Speichern…';
-    statusEl.innerHTML = '';
+    btnSave.disabled      = true;
+    btnSaveClose.disabled = true;
+    statusEl.innerHTML    = '';
 
     save(function(settings) {
         const instance  = getAdapterInstance();
         const adapterId = 'system.adapter.iosync.' + instance;
 
         function onDone(err) {
-            btn.disabled    = false;
-            btn.textContent = 'Speichern';
+            btnSave.disabled      = false;
+            btnSaveClose.disabled = false;
             if (err) {
                 statusEl.innerHTML =
                     '<span style="color:#e53935;">Fehler: ' + escHtml(String(err)) + '</span>';
             } else {
                 statusEl.innerHTML =
                     '<span style="color:#4caf50;">&#10003; Gespeichert</span>';
-                setTimeout(() => { statusEl.textContent = ''; }, 3000);
+                if (closeAfter) {
+                    setTimeout(() => { try { window.parent.postMessage('close', '*'); } catch(e) {} window.close(); }, 800);
+                } else {
+                    setTimeout(() => { statusEl.textContent = ''; }, 3000);
+                }
             }
         }
 
@@ -1017,10 +1032,9 @@ document.getElementById('btn-save-manual').addEventListener('click', function() 
                 .then(r => r.json())
                 .then(data => data.ok ? onDone(null) : onDone(data.error || 'Fehler'))
                 .catch(() => {
-                    // 3. Letzter Fallback: Admin-Toolbar-Speichern anzeigen
                     if (_onChange) _onChange();
-                    btn.disabled    = false;
-                    btn.textContent = 'Speichern';
+                    btnSave.disabled      = false;
+                    btnSaveClose.disabled = false;
                     statusEl.innerHTML =
                         '<span style="color:#ffb300;">&#9888; Bitte den Speichern-Button in der Admin-Toolbar verwenden</span>';
                 });
@@ -1028,6 +1042,19 @@ document.getElementById('btn-save-manual').addEventListener('click', function() 
         }
         trySave();
     });
+}
+
+document.getElementById('btn-save-manual').addEventListener('click', function() {
+    doSave(false);
+});
+
+document.getElementById('btn-save-close').addEventListener('click', function() {
+    doSave(true);
+});
+
+document.getElementById('btn-close').addEventListener('click', function() {
+    try { window.parent.postMessage('close', '*'); } catch(e) {}
+    window.close();
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
