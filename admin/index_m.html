@@ -511,6 +511,27 @@ function triggerChange() {
     if (_onChange) _onChange();
 }
 
+/** Socket aus globalem Scope ODER aus Parent-Fenster holen (Admin 5 / 6 kompatibel) */
+function resolveSocket() {
+    if (typeof socket !== 'undefined' && socket && typeof socket.emit === 'function') return socket;
+    if (window.socket && typeof window.socket.emit === 'function') return window.socket;
+    try {
+        if (window.parent.socket && typeof window.parent.socket.emit === 'function') return window.parent.socket;
+        if (window.parent.servConn && window.parent.servConn._socket && typeof window.parent.servConn._socket.emit === 'function')
+            return window.parent.servConn._socket;
+    } catch (e) { /* cross-origin */ }
+    return null;
+}
+
+/** sendTo aus globalem Scope ODER aus Parent-Fenster holen */
+function resolveSendTo() {
+    if (typeof sendTo === 'function') return sendTo;
+    try {
+        if (typeof window.parent.sendTo === 'function') return window.parent.sendTo;
+    } catch (e) {}
+    return null;
+}
+
 function getAdapterInstance() {
     const m = location.search.match(/[?&]instance=(\d+)/);
     return m ? parseInt(m[1]) : 0;
@@ -652,7 +673,20 @@ document.getElementById('search-pattern').addEventListener('input', function() {
 function loadBrowserStates() {
     _browserLoading = true;
     showBrowserLoading('Datenpunkte werden geladen…');
+    // Admin-Socket wird async initialisiert — bis zu 3 s warten
+    _waitForSocketThenLoad(0);
+}
 
+function _waitForSocketThenLoad(attempt) {
+    const sock = resolveSocket();
+    if (!sock && attempt < 20) {
+        setTimeout(() => _waitForSocketThenLoad(attempt + 1), 150);
+        return;
+    }
+    _doLoadBrowserStates(sock);
+}
+
+function _doLoadBrowserStates(sock) {
     function onLoaded(states) {
         _browserLoading = false;
         _browserStates  = states.sort((a, b) => a.id.localeCompare(b.id));
@@ -660,40 +694,37 @@ function loadBrowserStates() {
         renderBrowser(document.getElementById('search-pattern').value || '');
     }
 
-    // Primär: socket.emit('getObjectView', ...) — direkte Admin-API
-    const sock = (typeof socket !== 'undefined') ? socket : null;
     if (sock && typeof sock.emit === 'function') {
         sock.emit('getObjectView', 'system', 'state', { startkey: '', endkey: '\u9999' }, function(err, res) {
             if (!err && res && res.rows && res.rows.length > 0) {
                 const states = res.rows.map(row => {
-                    const o      = row.value;
-                    const rawNm  = o && o.common && o.common.name;
-                    const name   = rawNm && typeof rawNm === 'object'
+                    const o     = row.value;
+                    const rawNm = o && o.common && o.common.name;
+                    const name  = rawNm && typeof rawNm === 'object'
                         ? (rawNm.de || rawNm.en || '')
                         : (rawNm || '');
                     const id = row.id;
                     return {
                         id,
-                        name:  String(name) !== id ? String(name) : '',
-                        unit:  (o && o.common && o.common.unit)  || '',
-                        type:  (o && o.common && o.common.type)  || 'mixed'
+                        name: String(name) !== id ? String(name) : '',
+                        unit: (o && o.common && o.common.unit) || '',
+                        type: (o && o.common && o.common.type) || 'mixed'
                     };
                 });
                 onLoaded(states);
             } else {
-                // Fallback über Adapter-sendTo
-                fallbackLoadStates(onLoaded);
+                fallbackLoadStates(onLoaded, sock);
             }
         });
     } else {
-        fallbackLoadStates(onLoaded);
+        fallbackLoadStates(onLoaded, null);
     }
 }
 
-function fallbackLoadStates(onLoaded) {
+function fallbackLoadStates(onLoaded, sock) {
     const cmd = 'iosync.' + getAdapterInstance();
 
-    function handle(data) {
+    function handleSendTo(data) {
         if (data && Array.isArray(data.results)) {
             onLoaded(data.results.map(r => ({
                 id:   r.id,
@@ -702,28 +733,49 @@ function fallbackLoadStates(onLoaded) {
                 type: r.type || 'mixed'
             })));
         } else {
+            fetchFallbackStates(onLoaded);
+        }
+    }
+
+    const st = resolveSendTo();
+    if (st) {
+        st(cmd, 'searchStates', { pattern: '*' }, handleSendTo);
+    } else if (sock && typeof sock.emit === 'function') {
+        sock.emit('sendTo', cmd, 'searchStates', { pattern: '*' }, handleSendTo);
+    } else {
+        fetchFallbackStates(onLoaded);
+    }
+}
+
+function fetchFallbackStates(onLoaded) {
+    const port     = parseInt(document.getElementById('apiPort').value) || 7443;
+    const user     = document.getElementById('apiUsername').value.trim();
+    const pass     = document.getElementById('apiPassword').value;
+    const httpMode = document.getElementById('httpMode').checked;
+    const baseUrl  = (httpMode ? 'http' : 'https') + '://localhost:' + port;
+    const headers  = {};
+    if (user && pass) headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
+
+    fetch(baseUrl + '/api/stateObjects', { headers })
+        .then(r => r.json())
+        .then(data => {
+            if (data && Array.isArray(data.results) && data.results.length > 0) {
+                onLoaded(data.results);
+            } else {
+                _browserLoading = false;
+                showBrowserLoading(
+                    'Datenpunkte konnten nicht geladen werden.<br/>' +
+                    '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
+                );
+            }
+        })
+        .catch(() => {
             _browserLoading = false;
             showBrowserLoading(
                 'Datenpunkte konnten nicht geladen werden.<br/>' +
                 '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
             );
-        }
-    }
-
-    if (typeof sendTo === 'function') {
-        sendTo(cmd, 'searchStates', { pattern: '*' }, handle);
-    } else {
-        const sock = (typeof socket !== 'undefined') ? socket : null;
-        if (sock && typeof sock.emit === 'function') {
-            sock.emit('sendTo', cmd, 'searchStates', { pattern: '*' }, handle);
-        } else {
-            _browserLoading = false;
-            showBrowserLoading(
-                'Admin-API nicht erreichbar.<br/>' +
-                '<span style="color:#555;">Bitte ioBroker-ID manuell eingeben.</span>'
-            );
-        }
-    }
+        });
 }
 
 function showBrowserLoading(msg) {
@@ -850,16 +902,15 @@ document.getElementById('btn-test-api').addEventListener('click', () => {
         }
     }
 
-    if (typeof sendTo === 'function') {
-        sendTo(cmd, 'testApi', {}, handle);
+    const stApi = resolveSendTo();
+    const sockApi = resolveSocket();
+    if (stApi) {
+        stApi(cmd, 'testApi', {}, handle);
+    } else if (sockApi) {
+        sockApi.emit('sendTo', cmd, 'testApi', {}, handle);
     } else {
-        const sock = (typeof socket !== 'undefined') ? socket : null;
-        if (sock && sock.emit) {
-            sock.emit('sendTo', cmd, 'testApi', {}, handle);
-        } else {
-            statusEl.innerHTML =
-                '<span class="status-badge badge-err">Admin-API nicht verfügbar</span>';
-        }
+        statusEl.innerHTML =
+            '<span class="status-badge badge-err">Admin-Socket nicht verfügbar</span>';
     }
 });
 
@@ -880,15 +931,14 @@ document.getElementById('btn-preview').addEventListener('click', () => {
         box.textContent = JSON.stringify(data.datapoints, null, 2);
     }
 
-    if (typeof sendTo === 'function') {
-        sendTo(cmd, 'getCachePreview', {}, handle);
+    const stPrev = resolveSendTo();
+    const sockPrev = resolveSocket();
+    if (stPrev) {
+        stPrev(cmd, 'getCachePreview', {}, handle);
+    } else if (sockPrev) {
+        sockPrev.emit('sendTo', cmd, 'getCachePreview', {}, handle);
     } else {
-        const sock = (typeof socket !== 'undefined') ? socket : null;
-        if (sock && sock.emit) {
-            sock.emit('sendTo', cmd, 'getCachePreview', {}, handle);
-        } else {
-            box.textContent = 'Admin-API nicht verfügbar.';
-        }
+        box.textContent = 'Admin-Socket nicht verfügbar.';
     }
 });
 
@@ -938,14 +988,45 @@ document.getElementById('btn-save-manual').addEventListener('click', function() 
             }
         }
 
-        const sock = (typeof socket !== 'undefined') ? socket : null;
-        if (sock && typeof sock.emit === 'function') {
-            sock.emit('extendObject', adapterId, { native: settings }, onDone);
-        } else {
-            // Fallback: onChange aufrufen damit der Admin seinen Speichern-Button zeigt
-            if (_onChange) _onChange();
-            onDone(null);
+        // 1. Versuch: Admin-Socket extendObject
+        let _saveAttempt = 0;
+        function trySave() {
+            const sock = resolveSocket();
+            if (!sock && _saveAttempt < 20) {
+                _saveAttempt++;
+                setTimeout(trySave, 150);
+                return;
+            }
+            if (sock && typeof sock.emit === 'function') {
+                sock.emit('extendObject', adapterId, { native: settings }, onDone);
+            } else {
+                // 2. Versuch: REST-Endpunkt des Adapters direkt
+                const port     = parseInt(document.getElementById('apiPort').value) || 7443;
+                const user     = document.getElementById('apiUsername').value.trim();
+                const pass     = document.getElementById('apiPassword').value;
+                const httpMode = document.getElementById('httpMode').checked;
+                const baseUrl  = (httpMode ? 'http' : 'https') + '://localhost:' + port;
+                const headers  = { 'Content-Type': 'application/json' };
+                if (user && pass) headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
+
+                fetch(baseUrl + '/api/saveConfig', {
+                    method:  'POST',
+                    headers: headers,
+                    body:    JSON.stringify(settings)
+                })
+                .then(r => r.json())
+                .then(data => data.ok ? onDone(null) : onDone(data.error || 'Fehler'))
+                .catch(() => {
+                    // 3. Letzter Fallback: Admin-Toolbar-Speichern anzeigen
+                    if (_onChange) _onChange();
+                    btn.disabled    = false;
+                    btn.textContent = 'Speichern';
+                    statusEl.innerHTML =
+                        '<span style="color:#ffb300;">&#9888; Bitte den Speichern-Button in der Admin-Toolbar verwenden</span>';
+                });
+            }
         }
+        trySave();
     });
 });
 

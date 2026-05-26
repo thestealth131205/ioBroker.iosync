@@ -272,6 +272,47 @@ class IoSyncAdapter extends utils.Adapter {
             }
         });
 
+        // Alle ioBroker-State-Objekte für Admin-UI-Browser (kein Auth nötig — lokaler Zugriff)
+        app.get('/api/stateObjects', async (_req, res) => {
+            try {
+                const objects = await this.getForeignObjectsAsync('*', 'state');
+                const results = [];
+                for (const [id, o] of Object.entries(objects || {})) {
+                    if (!o || !o.common) continue;
+                    const rawName = o.common.name;
+                    const name = rawName && typeof rawName === 'object'
+                        ? (rawName.de || rawName.en || id)
+                        : (rawName || id);
+                    results.push({
+                        id,
+                        name:  String(name) !== id ? String(name) : '',
+                        unit:  o.common.unit  || '',
+                        type:  o.common.type  || 'mixed',
+                        role:  o.common.role  || ''
+                    });
+                }
+                results.sort((a, b) => a.id.localeCompare(b.id));
+                res.json({ results });
+            } catch (e) {
+                res.status(500).json({ error: e.message, results: [] });
+            }
+        });
+
+        // Konfiguration aus Admin-UI speichern (direkt über Adapter)
+        app.post('/api/saveConfig', express.json(), async (req, res) => {
+            const settings = req.body;
+            if (!settings || typeof settings !== 'object') {
+                return res.status(400).json({ error: 'Ungültige Konfiguration' });
+            }
+            try {
+                const adapterId = 'system.adapter.iosync.' + this.instance;
+                await this.extendForeignObjectAsync(adapterId, { native: settings });
+                res.json({ ok: true });
+            } catch (e) {
+                res.status(500).json({ error: e.message });
+            }
+        });
+
         app.use((_req, res) => {
             res.status(404).json({ error: 'Endpunkt nicht gefunden' });
         });
@@ -405,7 +446,7 @@ class IoSyncAdapter extends utils.Adapter {
                     }
                     results.sort((a, b) => a.id.localeCompare(b.id));
                     obj.callback && this.sendTo(obj.from, obj.command,
-                        { results: results.slice(0, 300) }, obj.callback);
+                        { results: results.slice(0, 3000) }, obj.callback);
                 }).catch(err => {
                     obj.callback && this.sendTo(obj.from, obj.command,
                         { error: err.message, results: [] }, obj.callback);
