@@ -1,0 +1,93 @@
+{
+  "common": {
+    "name": "iosync",
+    "version": "2.1.0",
+    "news": {
+      "2.1.0": {
+        "en": "New: POST /api/setState — Android app can now write ioBroker data points via the adapter. Added GET /api/state/:id for direct reads.",
+        "de": "Neu: POST /api/setState — Android-App kann jetzt ioBroker-Datenpunkte über den Adapter schreiben. GET /api/state/:id für Direktabfragen hinzugefügt."
+      },
+      "2.0.0": {
+        "en": "New: HTTPS Data Point Broker — expose selected ioBroker data points via secure HTTPS API with per-datapoint intervals and Basic Auth.",
+        "de": "Neu: HTTPS-Datenpunkt-Broker — konfigurierbare Datenpunkte per HTTPS-API mit individuellen Intervallen und Basic Auth bereitstellen."
+      },
+      "1.0.0": {
+        "en": "Initial release — pushes ioBroker states to IoSync Android app via HTTP/WebSocket.",
+        "de": "Erstveröffentlichung — sendet ioBroker-Datenpunkte per HTTP/WebSocket an die IoSync-Android-App."
+      }
+    },
+    "title": "IoSync Data Point Broker",
+    "titleLang": {
+      "en": "IoSync Data Point Broker",
+      "de": "IoSync Datenpunkt-Broker"
+    },
+    "desc": {
+      "en": "Exposes selected ioBroker data points via a secure HTTPS API. Smartwatches and other apps can pull data on configurable intervals with Basic Auth protection.",
+      "de": "Stellt ausgewählte ioBroker-Datenpunkte über eine sichere HTTPS-API bereit. Smartwatches und andere Apps können Daten in konfigurierbaren Intervallen mit Basic-Auth-Schutz abrufen."
+    },
+    "authors": ["IoSync <dev@iosync.local>"],
+    "keywords": ["android", "smartwatch", "smart home", "api", "https", "iosync", "broker"],
+    "license": "MIT",
+    "platform": "Javascript/Node.js",
+    "main": "main.js",
+    "icon": "admin/iosync.png",
+    "enabled": true,
+    "mode": "daemon",
+    "type": "general",
+    "materialize": true,
+    "adminUI": {
+      "config": "materialize"
+    },
+    "loglevel": "info",
+    "dependencies": [
+      { "js-controller": ">=5.0.0" }
+    ],
+    "globalDependencies": [],
+    "readme": "https://github.com/your-org/ioBroker.iosync",
+    "connectionType": "local",
+    "dataSource": "pull"
+  },
+  "native": {
+    "apiPort": 7443,
+    "apiUsername": "admin",
+    "apiPassword": "",
+    "apiSslCertPath": "",
+    "apiSslKeyPath": "",
+    "dataPoints": []
+  },
+  "objects": [],
+  "instanceObjects": [
+    {
+      "_id": "info",
+      "type": "channel",
+      "common": { "name": "Informationen" },
+      "native": {}
+    },
+    {
+      "_id": "info.connection",
+      "type": "state",
+      "common": {
+        "role": "indicator.connected",
+        "name": { "en": "HTTPS API running", "de": "HTTPS-API läuft" },
+        "type": "boolean",
+        "read": true,
+        "write": false,
+        "def": false
+      },
+      "native": {}
+    },
+    {
+      "_id": "info.apiPort",
+      "type": "state",
+      "common": {
+        "role": "value",
+        "name": { "en": "API port", "de": "API-Port" },
+        "type": "number",
+        "read": true,
+        "write": false,
+        "def": 7443
+      },
+      "native": {}
+    }
+  ]
+}

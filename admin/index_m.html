@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8" />
+    <title>IoSync Datenpunkt-Broker</title>
+    <link rel="stylesheet" href="../../lib/css/materialize.min.css" />
+    <style>
+        body {
+            background: #0d0d0d;
+            color: #eee;
+            font-family: 'Roboto', sans-serif;
+        }
+        .section-title {
+            color: #eaff00;
+            font-size: 0.85rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin: 24px 0 8px;
+            padding-bottom: 4px;
+            border-bottom: 1px solid #2a2a2a;
+        }
+        .card {
+            background: #1a1a1a !important;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5) !important;
+        }
+        .input-field input,
+        .input-field textarea {
+            color: #eee !important;
+            border-bottom-color: #444 !important;
+        }
+        .input-field input:focus,
+        .input-field textarea:focus {
+            border-bottom-color: #eaff00 !important;
+            box-shadow: 0 1px 0 0 #eaff00 !important;
+        }
+        .input-field label { color: #888 !important; }
+        .input-field label.active { color: #eaff00 !important; }
+
+        /* Datenpunkt-Tabelle */
+        #dp-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        #dp-table th {
+            color: #eaff00;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            border-bottom: 1px solid #333;
+            padding: 6px 8px;
+            text-align: left;
+        }
+        #dp-table td {
+            padding: 4px 6px;
+            border-bottom: 1px solid #222;
+            vertical-align: middle;
+        }
+        #dp-table tr:hover td { background: #1f1f1f; }
+        #dp-table input {
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #eee;
+            padding: 4px 8px;
+            font-size: 0.85rem;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #dp-table input:focus {
+            outline: none;
+            border-color: #eaff00;
+        }
+        .col-id    { width: 40%; }
+        .col-alias { width: 28%; }
+        .col-intvl { width: 15%; }
+        .col-del   { width: 7%;  text-align: center; }
+
+        .btn-del {
+            background: none;
+            border: none;
+            color: #e53935;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.15s;
+        }
+        .btn-del:hover { background: #2a1010; }
+
+        /* Such-Modal */
+        #search-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.75);
+            z-index: 9000;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 60px;
+        }
+        #search-modal.open { display: flex; }
+        #search-box {
+            background: #1a1a1a;
+            border-radius: 10px;
+            width: 680px;
+            max-width: 95vw;
+            max-height: 75vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+            overflow: hidden;
+        }
+        #search-header {
+            padding: 16px 20px 12px;
+            border-bottom: 1px solid #2a2a2a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #search-header span {
+            color: #eaff00;
+            font-weight: 700;
+            font-size: 1rem;
+            flex: 1;
+        }
+        #search-input-wrap {
+            display: flex;
+            gap: 8px;
+            padding: 12px 20px;
+            border-bottom: 1px solid #1e1e1e;
+        }
+        #search-pattern {
+            flex: 1;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 6px;
+            color: #eee;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        #search-pattern:focus { outline: none; border-color: #eaff00; }
+        #btn-do-search {
+            background: #eaff00;
+            color: #111;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 18px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        #btn-do-search:hover { background: #d4e800; }
+        #search-results {
+            overflow-y: auto;
+            flex: 1;
+        }
+        .search-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 20px;
+            border-bottom: 1px solid #1e1e1e;
+            cursor: pointer;
+            transition: background 0.12s;
+            gap: 10px;
+        }
+        .search-item:hover { background: #232323; }
+        .search-item-id {
+            font-family: monospace;
+            font-size: 0.8rem;
+            color: #ccc;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .search-item-name {
+            font-size: 0.8rem;
+            color: #888;
+            min-width: 80px;
+            text-align: right;
+        }
+        .search-item-unit {
+            font-size: 0.75rem;
+            color: #eaff00;
+            min-width: 30px;
+            text-align: right;
+        }
+        #search-empty {
+            padding: 24px;
+            text-align: center;
+            color: #666;
+            font-size: 0.85rem;
+        }
+        #search-footer {
+            padding: 10px 20px;
+            border-top: 1px solid #2a2a2a;
+            display: flex;
+            justify-content: flex-end;
+        }
+        #btn-close-search {
+            background: #333;
+            border: none;
+            color: #eee;
+            border-radius: 6px;
+            padding: 7px 18px;
+            cursor: pointer;
+        }
+        #btn-close-search:hover { background: #444; }
+
+        /* Vorschau-Box */
+        #preview-box {
+            background: #111;
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-family: monospace;
+            font-size: 0.78rem;
+            color: #aaa;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #2a2a2a;
+            white-space: pre;
+        }
+
+        /* Status-Badge */
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+        .badge-ok  { background: #1a3a1a; color: #4caf50; }
+        .badge-err { background: #3a1a1a; color: #e53935; }
+
+        .accent { color: #eaff00; }
+        .wave-btn { background: #eaff00 !important; color: #111 !important; }
+        .wave-btn:hover { background: #d4e800 !important; }
+
+        .row { margin-bottom: 0; }
+    </style>
+</head>
+<body>
+
+<!-- ═══ Such-Modal ════════════════════════════════════════════════════════ -->
+<div id="search-modal">
+    <div id="search-box">
+        <div id="search-header">
+            <span>ioBroker Datenpunkt auswählen</span>
+        </div>
+        <div id="search-input-wrap">
+            <input id="search-pattern" type="text" placeholder="Muster z.B.  hm-rpc.0.*  oder  javascript.0.*" />
+            <button id="btn-do-search">Suchen</button>
+        </div>
+        <div id="search-results">
+            <div id="search-empty">Suchbegriff eingeben und auf Suchen klicken.</div>
+        </div>
+        <div id="search-footer">
+            <button id="btn-close-search">Schließen</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ Hauptinhalt ═══════════════════════════════════════════════════════ -->
+<div style="padding: 16px 8px 40px;">
+
+    <!-- Header -->
+    <div class="row">
+        <div class="col s12">
+            <h5 class="accent" style="margin-bottom:2px;">IoSync — Datenpunkt-Broker</h5>
+            <p style="color:#666;margin-top:0;font-size:0.85rem;">
+                Wähle ioBroker-Datenpunkte aus, vergib einen Anzeigenamen und stelle ein Abrufintervall ein.
+                Die Daten werden über eine HTTPS-API für Smartwatches und andere Apps bereitgestellt.
+            </p>
+        </div>
+    </div>
+
+    <!-- ── API-Servereinstellungen ──────────────────────────────────────── -->
+    <div class="card">
+        <div class="card-content">
+            <div class="section-title">API-Server</div>
+            <div class="row">
+                <div class="input-field col s12 m2">
+                    <input type="number" id="apiPort" min="1" max="65535" />
+                    <label for="apiPort">Port</label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input type="text" id="apiUsername" autocomplete="off" />
+                    <label for="apiUsername">Benutzername</label>
+                </div>
+                <div class="input-field col s12 m4">
+                    <input type="password" id="apiPassword" autocomplete="new-password" />
+                    <label for="apiPassword">Passwort</label>
+                </div>
+                <div class="col s12 m2" style="padding-top:24px;">
+                    <button class="btn btn-small waves-effect wave-btn" id="btn-test-api">
+                        Status prüfen
+                    </button>
+                    <div id="api-status" style="margin-top:6px;font-size:0.78rem;color:#666;"></div>
+                </div>
+            </div>
+
+            <div class="section-title">SSL-Zertifikat</div>
+            <p style="color:#666;font-size:0.8rem;margin-top:-4px;">
+                Leer lassen für automatisches selbstsigniertes Zertifikat (wird einmalig generiert und gespeichert).
+            </p>
+            <div class="row">
+                <div class="input-field col s12 m6">
+                    <input type="text" id="apiSslCertPath" placeholder="/etc/ssl/certs/iosync.crt" />
+                    <label for="apiSslCertPath">Pfad zum SSL-Zertifikat (.crt / .pem)</label>
+                </div>
+                <div class="input-field col s12 m6">
+                    <input type="text" id="apiSslKeyPath" placeholder="/etc/ssl/private/iosync.key" />
+                    <label for="apiSslKeyPath">Pfad zum SSL-Schlüssel (.key / .pem)</label>
+                </div>
+            </div>
+
+            <div style="margin-top:4px;padding:8px 12px;background:#111;border-radius:6px;font-size:0.8rem;color:#888;">
+                <strong style="color:#eaff00;">API-Endpunkte:</strong>
+                &nbsp;
+                <code style="color:#ccc;">GET /api/datapoints</code> &nbsp;|&nbsp;
+                <code style="color:#ccc;">GET /api/datapoints/{alias}</code> &nbsp;|&nbsp;
+                <code style="color:#ccc;">GET /api/health</code>
+                <br/>
+                <span style="color:#666;">Authentifizierung: HTTP Basic Auth mit Benutzername &amp; Passwort</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Datenpunkte ──────────────────────────────────────────────────── -->
+    <div class="card" style="margin-top:16px;">
+        <div class="card-content">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <div class="section-title" style="margin:0;">Datenpunkte</div>
+                <button class="btn btn-small waves-effect wave-btn" id="btn-add-dp">
+                    + Datenpunkt hinzufügen
+                </button>
+            </div>
+
+            <div style="overflow-x:auto;">
+                <table id="dp-table">
+                    <thead>
+                        <tr>
+                            <th class="col-id">
+                                ioBroker-ID
+                                <span style="font-weight:normal;color:#666;text-transform:none;font-size:0.7rem;">
+                                    — klicke auf das Suchsymbol
+                                </span>
+                            </th>
+                            <th class="col-alias">Anzeigename (Alias)</th>
+                            <th class="col-intvl">Interval (Sek.)</th>
+                            <th class="col-del"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="dp-tbody">
+                        <!-- Zeilen werden per JS gefüllt -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="dp-empty" style="text-align:center;padding:20px;color:#555;font-size:0.85rem;display:none;">
+                Noch keine Datenpunkte konfiguriert. Klicke auf „+ Datenpunkt hinzufügen".
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Live-Vorschau ────────────────────────────────────────────────── -->
+    <div class="card" style="margin-top:16px;">
+        <div class="card-content">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+                <div class="section-title" style="margin:0;">API-Vorschau (aktueller Cache)</div>
+                <button class="btn btn-small waves-effect wave-btn" id="btn-preview">
+                    Aktualisieren
+                </button>
+            </div>
+            <div id="preview-box">Klicke auf "Aktualisieren" um die aktuellen Werte anzuzeigen.</div>
+        </div>
+    </div>
+
+</div><!-- /main -->
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// Hilfsfunktionen
+// ─────────────────────────────────────────────────────────────────────────────
+
+let _onChange = null;
+let _pendingSearchRow = null;  // Zeilen-Index der wartenden Suche
+
+function triggerChange() {
+    if (_onChange) _onChange();
+}
+
+function getAdapterInstance() {
+    // ioBroker admin übergibt die Instanznummer als URL-Parameter
+    const m = location.search.match(/[?&]instance=(\d+)/);
+    return m ? parseInt(m[1]) : 0;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Datenpunkt-Tabelle
+// ─────────────────────────────────────────────────────────────────────────────
+
+function renderDpTable(dataPoints) {
+    const tbody = document.getElementById('dp-tbody');
+    tbody.innerHTML = '';
+
+    (dataPoints || []).forEach((dp, idx) => {
+        tbody.appendChild(createDpRow(dp.id || '', dp.alias || '', dp.intervalSec || 30, idx));
+    });
+
+    updateEmptyHint();
+}
+
+function createDpRow(id, alias, intervalSec, idx) {
+    const tr = document.createElement('tr');
+    tr.dataset.idx = idx;
+
+    tr.innerHTML = `
+        <td class="col-id">
+            <div style="display:flex;gap:4px;align-items:center;">
+                <input type="text" class="dp-id" value="${escHtml(id)}"
+                       placeholder="z.B. hm-rpc.0.device.TEMPERATURE"
+                       style="flex:1;" />
+                <button class="btn-search-dp" title="Datenpunkt suchen"
+                        style="background:none;border:1px solid #333;border-radius:4px;
+                               color:#eaff00;padding:4px 7px;cursor:pointer;font-size:0.9rem;
+                               white-space:nowrap;">&#128269;</button>
+            </div>
+        </td>
+        <td class="col-alias">
+            <input type="text" class="dp-alias" value="${escHtml(alias)}"
+                   placeholder="z.B. Wohnzimmer Temp." />
+        </td>
+        <td class="col-intvl">
+            <input type="number" class="dp-interval" value="${intervalSec}"
+                   min="1" max="86400" style="width:80px;" />
+        </td>
+        <td class="col-del">
+            <button class="btn-del" title="Entfernen">&#10005;</button>
+        </td>
+    `;
+
+    // Änderungs-Listener
+    tr.querySelectorAll('input').forEach(inp => {
+        inp.addEventListener('change', triggerChange);
+        inp.addEventListener('input',  triggerChange);
+    });
+
+    // Löschen
+    tr.querySelector('.btn-del').addEventListener('click', () => {
+        tr.remove();
+        reIndexRows();
+        updateEmptyHint();
+        triggerChange();
+    });
+
+    // Suchen
+    tr.querySelector('.btn-search-dp').addEventListener('click', () => {
+        _pendingSearchRow = tr;
+        openSearchModal();
+    });
+
+    return tr;
+}
+
+function reIndexRows() {
+    document.querySelectorAll('#dp-tbody tr').forEach((tr, i) => {
+        tr.dataset.idx = i;
+    });
+}
+
+function updateEmptyHint() {
+    const rows  = document.querySelectorAll('#dp-tbody tr').length;
+    document.getElementById('dp-empty').style.display = rows === 0 ? 'block' : 'none';
+}
+
+function collectDataPoints() {
+    const result = [];
+    document.querySelectorAll('#dp-tbody tr').forEach(tr => {
+        const id          = tr.querySelector('.dp-id').value.trim();
+        const alias       = tr.querySelector('.dp-alias').value.trim();
+        const intervalSec = parseInt(tr.querySelector('.dp-interval').value) || 30;
+        if (id && alias) {
+            result.push({ id, alias, intervalSec });
+        }
+    });
+    return result;
+}
+
+function escHtml(s) {
+    return String(s)
+        .replace(/&/g,  '&amp;')
+        .replace(/</g,  '&lt;')
+        .replace(/>/g,  '&gt;')
+        .replace(/"/g,  '&quot;');
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Such-Modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+function openSearchModal() {
+    document.getElementById('search-modal').classList.add('open');
+    document.getElementById('search-pattern').focus();
+}
+
+function closeSearchModal() {
+    document.getElementById('search-modal').classList.remove('open');
+    _pendingSearchRow = null;
+}
+
+document.getElementById('btn-close-search').addEventListener('click', closeSearchModal);
+document.getElementById('search-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSearchModal();
+});
+
+document.getElementById('search-pattern').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doSearch();
+});
+
+document.getElementById('btn-do-search').addEventListener('click', doSearch);
+
+function doSearch() {
+    const pattern = document.getElementById('search-pattern').value.trim() || '*';
+    const resultsDiv = document.getElementById('search-results');
+    resultsDiv.innerHTML = '<div id="search-empty">Suche läuft…</div>';
+
+    // Nachricht an den Adapter senden
+    const instance = getAdapterInstance();
+    const cmd = 'iosync.' + instance;
+
+    function handleResults(data) {
+        const results = (data && data.results) || [];
+        resultsDiv.innerHTML = '';
+
+        if (results.length === 0) {
+            resultsDiv.innerHTML = '<div id="search-empty">Keine Datenpunkte gefunden.</div>';
+            return;
+        }
+
+        results.forEach(item => {
+            const div = document.createElement('div');
+            div.className = 'search-item';
+            div.innerHTML = `
+                <span class="search-item-id">${escHtml(item.id)}</span>
+                <span class="search-item-name">${escHtml(item.name !== item.id ? item.name : '')}</span>
+                <span class="search-item-unit">${escHtml(item.unit)}</span>
+            `;
+            div.addEventListener('click', () => {
+                if (_pendingSearchRow) {
+                    _pendingSearchRow.querySelector('.dp-id').value    = item.id;
+                    // Alias vorbelegen wenn leer
+                    const aliasInput = _pendingSearchRow.querySelector('.dp-alias');
+                    if (!aliasInput.value.trim()) {
+                        aliasInput.value = item.name || item.id.split('.').pop();
+                    }
+                    triggerChange();
+                }
+                closeSearchModal();
+            });
+            resultsDiv.appendChild(div);
+        });
+    }
+
+    // Versuche sendTo über verschiedene Admin-APIs
+    if (typeof sendTo === 'function') {
+        sendTo(cmd, 'searchStates', { pattern }, handleResults);
+    } else if (typeof socket !== 'undefined' && socket.emit) {
+        socket.emit('sendTo', cmd, 'searchStates', { pattern }, handleResults);
+    } else {
+        resultsDiv.innerHTML = '<div id="search-empty">Suche nicht verfügbar (Admin-API nicht erreichbar). Bitte ID manuell eingeben.</div>';
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// API-Status prüfen
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-test-api').addEventListener('click', () => {
+    const statusEl = document.getElementById('api-status');
+    statusEl.textContent = 'Prüfe…';
+
+    const instance = getAdapterInstance();
+    const cmd = 'iosync.' + instance;
+
+    function handleApiStatus(data) {
+        if (data && data.running) {
+            statusEl.innerHTML = `<span class="status-badge badge-ok">&#10003; Läuft (Port ${data.port}, ${data.cacheSize} Punkte)</span>`;
+        } else {
+            statusEl.innerHTML = `<span class="status-badge badge-err">&#10005; Nicht aktiv</span>`;
+        }
+    }
+
+    if (typeof sendTo === 'function') {
+        sendTo(cmd, 'testApi', {}, handleApiStatus);
+    } else if (typeof socket !== 'undefined' && socket.emit) {
+        socket.emit('sendTo', cmd, 'testApi', {}, handleApiStatus);
+    } else {
+        statusEl.innerHTML = '<span class="status-badge badge-err">Admin-API nicht verfügbar</span>';
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vorschau
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-preview').addEventListener('click', () => {
+    const box = document.getElementById('preview-box');
+    box.textContent = 'Lade…';
+
+    const instance = getAdapterInstance();
+    const cmd = 'iosync.' + instance;
+
+    function handlePreview(data) {
+        if (!data || !data.datapoints || data.datapoints.length === 0) {
+            box.textContent = 'Keine Daten im Cache (Adapter läuft möglicherweise nicht).';
+            return;
+        }
+        box.textContent = JSON.stringify(data.datapoints, null, 2);
+    }
+
+    if (typeof sendTo === 'function') {
+        sendTo(cmd, 'getCachePreview', {}, handlePreview);
+    } else if (typeof socket !== 'undefined' && socket.emit) {
+        socket.emit('sendTo', cmd, 'getCachePreview', {}, handlePreview);
+    } else {
+        box.textContent = 'Admin-API nicht verfügbar.';
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Datenpunkt-Zeile hinzufügen
+// ─────────────────────────────────────────────────────────────────────────────
+
+document.getElementById('btn-add-dp').addEventListener('click', () => {
+    const tbody = document.getElementById('dp-tbody');
+    const idx   = tbody.querySelectorAll('tr').length;
+    tbody.appendChild(createDpRow('', '', 30, idx));
+    updateEmptyHint();
+    triggerChange();
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ioBroker Admin — load / save
+// ─────────────────────────────────────────────────────────────────────────────
+
+function load(settings, onChange) {
+    _onChange = onChange;
+
+    if (!settings) settings = {};
+
+    // API-Felder
+    document.getElementById('apiPort').value       = settings.apiPort       || 7443;
+    document.getElementById('apiUsername').value   = settings.apiUsername   || '';
+    document.getElementById('apiPassword').value   = settings.apiPassword   || '';
+    document.getElementById('apiSslCertPath').value = settings.apiSslCertPath || '';
+    document.getElementById('apiSslKeyPath').value  = settings.apiSslKeyPath  || '';
+
+    // Datenpunkte
+    renderDpTable(settings.dataPoints || []);
+
+    // Materialize Labels aktivieren
+    if (typeof M !== 'undefined') M.updateTextFields();
+
+    // Änderungs-Listener für einfache Felder
+    ['apiPort','apiUsername','apiPassword','apiSslCertPath','apiSslKeyPath'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', onChange);
+            el.addEventListener('input',  onChange);
+        }
+    });
+}
+
+function save(callback) {
+    callback({
+        apiPort:        parseInt(document.getElementById('apiPort').value)        || 7443,
+        apiUsername:    document.getElementById('apiUsername').value.trim(),
+        apiPassword:    document.getElementById('apiPassword').value,
+        apiSslCertPath: document.getElementById('apiSslCertPath').value.trim(),
+        apiSslKeyPath:  document.getElementById('apiSslKeyPath').value.trim(),
+        dataPoints:     collectDataPoints()
+    });
+}
+</script>
+</body>
+</html>
