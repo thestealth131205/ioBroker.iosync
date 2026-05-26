@@ -3,11 +3,62 @@
 <head>
     <meta charset="UTF-8" />
     <title>IoSync Datenpunkt-Broker</title>
-    <link rel="stylesheet" href="../../lib/css/materialize.min.css" />
-    <link rel="stylesheet" href="../../lib/css/font-icons.min.css" />
+    <link rel="stylesheet" href="../../lib/css/materialize.css" />
     <script src="../../lib/js/jquery-3.2.1.min.js"></script>
     <script src="../../lib/js/socket.io.js"></script>
     <style>
+        /* Material Icons Font */
+        @font-face {
+            font-family: 'Material Icons';
+            font-style: normal;
+            font-weight: 400;
+            src: url('../../lib/fonts/material.woff2') format('woff2');
+        }
+        .material-icons {
+            font-family: 'Material Icons';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 18px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-smoothing: antialiased;
+            vertical-align: middle;
+        }
+
+        /* Footer-Buttons (injiziert von adapter-settings.js) */
+        nav.dialog-config-buttons {
+            background: #1a1a1a !important;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.5) !important;
+            padding: 0 12px !important;
+            height: auto !important;
+            line-height: normal !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+        }
+        nav.dialog-config-buttons .btn {
+            background-color: #eaff00 !important;
+            color: #111 !important;
+            margin: 8px 0 !important;
+            height: 36px !important;
+            line-height: 36px !important;
+            font-size: 0.85rem !important;
+        }
+        nav.dialog-config-buttons .btn-cancel {
+            background-color: #333 !important;
+            color: #eee !important;
+            margin-left: auto !important;
+        }
+        nav.dialog-config-buttons .btn.disabled {
+            background-color: #555 !important;
+            color: #888 !important;
+        }
+
         body {
             background: #0d0d0d;
             color: #eee;
