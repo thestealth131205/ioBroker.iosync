@@ -276,6 +276,38 @@
 
         .row { margin-bottom: 0; }
 
+        /* ── Injizierte Admin-Footer-Buttons (adapter-settings.js) ── */
+        .dialog-config-buttons {
+            background: #111;
+            padding: 10px 16px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border-top: 1px solid #2a2a2a;
+        }
+        .dialog-config-buttons .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 18px;
+            border-radius: 6px;
+            background: #eaff00;
+            color: #111 !important;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            border: none;
+            outline: none;
+            transition: background 0.15s;
+        }
+        .dialog-config-buttons .btn:hover { background: #d4e800; }
+        .dialog-config-buttons .btn.disabled { opacity: 0.4; pointer-events: none; }
+        .dialog-config-buttons .btn-cancel { background: #333; color: #eee !important; }
+        .dialog-config-buttons .btn-cancel:hover { background: #444; }
+        /* Material-Icons-Font fehlt → Icon-Text ausblenden */
+        .dialog-config-buttons .material-icons { display: none; }
+
         /* GitHub-Info */
         .github-info {
             background: #111;
