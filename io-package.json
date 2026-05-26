@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.5.7",
+    "version": "2.5.8",
     "news": {
+      "2.5.8": {
+        "en": "Fix: messagebox enabled so sendTo/getObjectTree works in admin UI.",
+        "de": "Fix: messagebox aktiviert damit sendTo/Datenpunktbaum im Admin-UI funktioniert."
+      },
       "2.5.7": {
         "en": "Fix: Datapoint browser now uses getForeignObjectsAsync for reliable loading; REST fallback added when adapter is stopped.",
         "de": "Fix: Datenpunktbaum nutzt jetzt getForeignObjectsAsync für zuverlässiges Laden; REST-Fallback wenn Adapter gestoppt ist."
@@ -62,6 +66,8 @@
     "adminUI": {
       "config": "materialize"
     },
+    "messagebox": true,
+    "supportMessages": true,
     "loglevel": "info",
     "dependencies": [
       { "js-controller": ">=5.0.0" }
