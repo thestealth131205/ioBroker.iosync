@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.4.0",
+    "version": "2.5.5",
     "news": {
+      "2.5.5": {
+        "en": "Fix: Config saving repaired, datapoint browser loads via adapter directly (no API needed), standard ioBroker save/cancel buttons added.",
+        "de": "Fix: Konfiguration speichern repariert, Datenpunktbaum lädt direkt über Adapter (keine API nötig), Standard-ioBroker-Speichern/Abbrechen-Buttons eingebaut."
+      },
       "2.4.0": {
         "en": "New: ioBroker datapoint tree browser in admin UI, explicit save button, GitHub update URL.",
         "de": "Neu: ioBroker-Datenpunktbaum im Admin-UI, expliziter Speichern-Button, GitHub-Update-URL."
