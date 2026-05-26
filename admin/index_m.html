@@ -5,12 +5,14 @@
     <title>IoSync Datenpunkt-Broker</title>
     <link rel="stylesheet" href="../../lib/css/materialize.min.css" />
     <link rel="stylesheet" href="../../lib/css/font-icons.min.css" />
+    <script src="../../lib/js/jquery-3.2.1.min.js"></script>
+    <script src="../../lib/js/socket.io.js"></script>
     <style>
         body {
             background: #0d0d0d;
             color: #eee;
             font-family: 'Roboto', sans-serif;
-            padding-bottom: 72px;
+            padding-bottom: 16px;
         }
         .section-title {
             color: #eaff00;
@@ -274,60 +276,6 @@
 
         .row { margin-bottom: 0; }
 
-        /* Speichern-Leiste */
-        #save-bar {
-            position: fixed;
-            bottom: 0; left: 0; right: 0;
-            background: #111;
-            border-top: 2px solid #2a2a2a;
-            padding: 10px 20px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 10px;
-            z-index: 7000;
-            box-shadow: 0 -4px 16px rgba(0,0,0,0.5);
-        }
-        #save-status {
-            font-size: 0.82rem;
-            min-width: 140px;
-            text-align: right;
-            flex: 1;
-        }
-        .save-bar-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            border: none;
-            border-radius: 4px;
-            padding: 0 16px;
-            height: 36px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.15s;
-            text-transform: uppercase;
-            letter-spacing: 0.03em;
-            white-space: nowrap;
-        }
-        #btn-save-manual {
-            background: #eaff00;
-            color: #111;
-        }
-        #btn-save-manual:hover  { background: #d4e800; }
-        #btn-save-manual:disabled { background: #555; color: #999; cursor: default; }
-        #btn-save-close {
-            background: #2e7d32;
-            color: #fff;
-        }
-        #btn-save-close:hover  { background: #388e3c; }
-        #btn-save-close:disabled { background: #555; color: #999; cursor: default; }
-        #btn-close {
-            background: #333;
-            color: #ccc;
-        }
-        #btn-close:hover { background: #444; }
-
         /* GitHub-Info */
         .github-info {
             background: #111;
@@ -514,23 +462,6 @@
     </div>
 
 </div><!-- /main -->
-
-<!-- ═══ Speichern-Leiste ══════════════════════════════════════════════════ -->
-<div id="save-bar">
-    <span id="save-status"></span>
-    <button id="btn-close" class="save-bar-btn">
-        <i class="material-icons" style="font-size:18px;">close</i>
-        Abbrechen
-    </button>
-    <button id="btn-save-close" class="save-bar-btn">
-        <i class="material-icons" style="font-size:18px;">save</i>
-        Speichern &amp; Schließen
-    </button>
-    <button id="btn-save-manual" class="save-bar-btn">
-        <i class="material-icons" style="font-size:18px;">check</i>
-        Speichern
-    </button>
-</div>
 
 <script>
 // ─────────────────────────────────────────────────────────────────────────────
@@ -992,114 +923,6 @@ document.getElementById('btn-add-dp').addEventListener('click', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Speichern-Buttons
-// ─────────────────────────────────────────────────────────────────────────────
-
-function doSave(closeAfter) {
-    const btnSave      = document.getElementById('btn-save-manual');
-    const btnSaveClose = document.getElementById('btn-save-close');
-    const statusEl     = document.getElementById('save-status');
-
-    btnSave.disabled      = true;
-    btnSaveClose.disabled = true;
-    statusEl.innerHTML    = '';
-
-    save(function(settings) {
-        const instance  = getAdapterInstance();
-        const adapterId = 'system.adapter.iosync.' + instance;
-
-        function doClose() {
-            // Admin 6 (React) erwartet ein Objekt, Admin 5 einen String
-            try { window.parent.postMessage({ command: 'close' }, '*'); } catch(e) {}
-            try { window.parent.postMessage('close', '*'); } catch(e) {}
-            try { window.parent.history.back(); } catch(e) {}
-            try { window.close(); } catch(e) {}
-        }
-
-        function onDone(err) {
-            btnSave.disabled      = false;
-            btnSaveClose.disabled = false;
-            if (err) {
-                statusEl.innerHTML =
-                    '<span style="color:#e53935;">Fehler: ' + escHtml(String(err)) + '</span>';
-            } else {
-                statusEl.innerHTML =
-                    '<span style="color:#4caf50;">&#10003; Gespeichert — Adapter wird neu gestartet…</span>';
-                if (closeAfter) {
-                    setTimeout(doClose, 800);
-                } else {
-                    setTimeout(() => { statusEl.textContent = ''; }, 3000);
-                }
-            }
-        }
-
-        // 1. Versuch: Admin-Socket extendObject
-        let _saveAttempt = 0;
-        function trySave() {
-            const sock = resolveSocket();
-            if (!sock && _saveAttempt < 20) {
-                _saveAttempt++;
-                setTimeout(trySave, 150);
-                return;
-            }
-            if (sock && typeof sock.emit === 'function') {
-                // Native-Einstellungen speichern → ioBroker startet Adapter automatisch neu
-                sock.emit('extendObject', adapterId, { native: settings }, function(err) {
-                    if (!err) {
-                        // Expliziter Neustart: enabled toggle falls Controller keinen Auto-Restart macht
-                        sock.emit('extendObject', adapterId, { common: { enabled: false } }, function() {
-                            setTimeout(function() {
-                                sock.emit('extendObject', adapterId, { common: { enabled: true } }, onDone);
-                            }, 1500);
-                        });
-                    } else {
-                        onDone(err);
-                    }
-                });
-            } else {
-                // 2. Versuch: REST-Endpunkt des Adapters direkt
-                const port     = parseInt(document.getElementById('apiPort').value) || 7443;
-                const user     = document.getElementById('apiUsername').value.trim();
-                const pass     = document.getElementById('apiPassword').value;
-                const httpMode = document.getElementById('httpMode').checked;
-                const baseUrl  = (httpMode ? 'http' : 'https') + '://localhost:' + port;
-                const headers  = { 'Content-Type': 'application/json' };
-                if (user && pass) headers['Authorization'] = 'Basic ' + btoa(user + ':' + pass);
-
-                fetch(baseUrl + '/api/saveConfig', {
-                    method:  'POST',
-                    headers: headers,
-                    body:    JSON.stringify(settings)
-                })
-                .then(r => r.json())
-                .then(data => data.ok ? onDone(null) : onDone(data.error || 'Fehler'))
-                .catch(() => {
-                    if (_onChange) _onChange();
-                    btnSave.disabled      = false;
-                    btnSaveClose.disabled = false;
-                    statusEl.innerHTML =
-                        '<span style="color:#ffb300;">&#9888; Bitte den Speichern-Button in der Admin-Toolbar verwenden</span>';
-                });
-            }
-        }
-        trySave();
-    });
-}
-
-document.getElementById('btn-save-manual').addEventListener('click', function() {
-    doSave(false);
-});
-
-document.getElementById('btn-save-close').addEventListener('click', function() {
-    doSave(true);
-});
-
-document.getElementById('btn-close').addEventListener('click', function() {
-    try { window.parent.postMessage('close', '*'); } catch(e) {}
-    window.close();
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
 // ioBroker Admin — load / save
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1150,5 +973,6 @@ function save(callback) {
     });
 }
 </script>
+<script src="../../js/adapter-settings.js"></script>
 </body>
 </html>

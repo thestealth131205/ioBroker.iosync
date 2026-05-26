@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.5.9",
+    "version": "2.6.1",
     "news": {
+      "2.6.1": {
+        "en": "Fix: jQuery added to admin page so config save/load works correctly.",
+        "de": "Fix: jQuery zur Admin-Seite hinzugefügt damit Konfiguration korrekt gespeichert/geladen wird."
+      },
       "2.5.8": {
         "en": "Fix: messagebox enabled so sendTo/getObjectTree works in admin UI.",
         "de": "Fix: messagebox aktiviert damit sendTo/Datenpunktbaum im Admin-UI funktioniert."
