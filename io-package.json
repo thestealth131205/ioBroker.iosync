@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.6.1",
+    "version": "2.6.4",
     "news": {
       "2.6.1": {
         "en": "Fix: jQuery added to admin page so config save/load works correctly.",
