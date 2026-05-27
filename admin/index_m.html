@@ -1045,7 +1045,7 @@ function updateSslFieldsVisibility() {
 }
 
 function save(callback) {
-    callback({
+    const settings = {
         apiPort:        parseInt(document.getElementById('apiPort').value)        || 7443,
         apiUsername:    document.getElementById('apiUsername').value.trim(),
         apiPassword:    document.getElementById('apiPassword').value,
@@ -1053,11 +1053,26 @@ function save(callback) {
         apiSslKeyPath:  document.getElementById('apiSslKeyPath').value.trim(),
         httpMode:       document.getElementById('httpMode').checked,
         dataPoints:     collectDataPoints()
-    });
-    // Dirty-Flag sofort synchron löschen, bevor der async Socket-Callback von
-    // adapter-settings.js es tut — verhindert den "Verwerfen?"-Dialog bei
-    // schnellem Klick auf Schließen direkt nach Speichern.
-    if (_onChange) _onChange(false);
+    };
+
+    // Primärer Pfad: adapter-settings.js (ruft saveSettings → setObject → close() auf)
+    callback(settings);
+
+    // Sicherungs-Save direkt über Parent-Socket.
+    // In Admin 7.8+ hat der eigene Socket von adapter-settings.js keine
+    // Schreibrechte für setObject. Der Parent-Socket funktioniert zuverlässig.
+    const sock = resolveSocket();
+    if (sock && typeof sock.emit === 'function') {
+        const adapterId = 'system.adapter.iosync.' + getAdapterInstance();
+        sock.emit('getObject', adapterId, function(err, obj) {
+            if (!err && obj && obj.native) {
+                Object.keys(settings).forEach(function(k) { obj.native[k] = settings[k]; });
+                sock.emit('setObject', adapterId, obj, function(saveErr) {
+                    if (!saveErr && _onChange) _onChange(false);
+                });
+            }
+        });
+    }
 }
 </script>
 <script src="../../js/adapter-settings.js"></script>
