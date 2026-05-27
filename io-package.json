@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.6.4",
+    "version": "2.6.5",
     "news": {
+      "2.6.5": {
+        "en": "Fix: Data points are now saved even if alias is empty (auto-filled from ID).",
+        "de": "Fix: Datenpunkte werden jetzt auch gespeichert wenn kein Alias angegeben ist (wird automatisch aus der ID befüllt)."
+      },
       "2.6.1": {
         "en": "Fix: jQuery added to admin page so config save/load works correctly.",
         "de": "Fix: jQuery zur Admin-Seite hinzugefügt damit Konfiguration korrekt gespeichert/geladen wird."

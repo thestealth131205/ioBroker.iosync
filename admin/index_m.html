@@ -669,9 +669,9 @@ function collectDataPoints() {
     const result = [];
     document.querySelectorAll('#dp-tbody tr').forEach(tr => {
         const id          = tr.querySelector('.dp-id').value.trim();
-        const alias       = tr.querySelector('.dp-alias').value.trim();
+        const alias       = tr.querySelector('.dp-alias').value.trim() || id.split('.').pop() || id;
         const intervalSec = parseInt(tr.querySelector('.dp-interval').value) || 30;
-        if (id && alias) {
+        if (id) {
             result.push({ id, alias, intervalSec });
         }
     });
