@@ -161,16 +161,19 @@ class IoSyncAdapter extends utils.Adapter {
     }
 
     onStateChange(id, state) {
-        // Echtzeit-Update für alle konfigurierten Datenpunkte — min. 1 Sekunde Abstand
+        // Echtzeit-Update für alle konfigurierten Datenpunkte — nur bei Wertänderung >= 0.2
         const now = Date.now();
         for (const [alias, entry] of this.cache.entries()) {
             if (entry.dp.id === id && state) {
-                if (now - entry.lastStateChange < 1000) continue;
+                const prevValue = entry.value;
+                const newValue  = state.val;
+                const isNumeric = typeof newValue === 'number' && typeof prevValue === 'number';
+                if (isNumeric && Math.abs(newValue - prevValue) < 0.2) continue;
                 entry.lastStateChange = now;
-                entry.value     = state.val;
-                entry.type      = this.detectType(state.val);
+                entry.value     = newValue;
+                entry.type      = this.detectType(newValue);
                 entry.timestamp = state.ts || now;
-                this.log.debug(`Echtzeit-Update: "${alias}" = ${state.val}`);
+                this.log.debug(`Echtzeit-Update: "${alias}" = ${newValue}`);
             }
         }
     }
