@@ -118,7 +118,7 @@ class IoSyncAdapter extends utils.Adapter {
         }
 
         // Cache-Eintrag anlegen
-        const entry = { dp, value: null, type: 'mixed', unit, timestamp: 0, timer: null };
+        const entry = { dp, value: null, type: 'mixed', unit, timestamp: 0, timer: null, lastStateChange: 0 };
         this.cache.set(alias, entry);
 
         // Ersten Wert sofort lesen
@@ -161,12 +161,15 @@ class IoSyncAdapter extends utils.Adapter {
     }
 
     onStateChange(id, state) {
-        // Echtzeit-Update für alle konfigurierten Datenpunkte
+        // Echtzeit-Update für alle konfigurierten Datenpunkte — min. 1 Sekunde Abstand
+        const now = Date.now();
         for (const [alias, entry] of this.cache.entries()) {
             if (entry.dp.id === id && state) {
+                if (now - entry.lastStateChange < 1000) continue;
+                entry.lastStateChange = now;
                 entry.value     = state.val;
                 entry.type      = this.detectType(state.val);
-                entry.timestamp = state.ts || Date.now();
+                entry.timestamp = state.ts || now;
                 this.log.debug(`Echtzeit-Update: "${alias}" = ${state.val}`);
             }
         }
