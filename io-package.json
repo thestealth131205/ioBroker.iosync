@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.6.5",
+    "version": "2.6.6",
     "news": {
+      "2.6.6": {
+        "en": "Fix: Real-time updates only triggered when value changes by at least 0.2 (threshold instead of throttle).",
+        "de": "Fix: Echtzeit-Updates nur bei Wertänderung um mindestens 0.2 (Schwellwert statt Throttle)."
+      },
       "2.6.5": {
         "en": "Fix: Config saving now uses parent socket reliably — datapoints and all settings are persisted correctly in Admin 7.8+.",
         "de": "Fix: Konfiguration wird jetzt zuverlässig über Parent-Socket gespeichert — Datenpunkte und alle Einstellungen werden in Admin 7.8+ korrekt persistiert."
