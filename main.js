@@ -36,11 +36,18 @@ class IoSyncAdapter extends utils.Adapter {
         /**
          * Cache aller konfigurierten Datenpunkte.
          * Key = dp.alias
-         * @type {Map<string, {dp: {id:string,alias:string,intervalSec:number}, value:any, type:string, unit:string, timestamp:number, timer:NodeJS.Timeout|null}>}
+         * @type {Map<string, {dp: {id:string,alias:string,intervalSec:number}, value:any, type:string, unit:string, timestamp:number, lastStateChange:number}>}
          */
         this.cache = new Map();
 
         this.apiServer = null;
+
+        /**
+         * Aktive Server-Sent-Events-Clients (Echtzeit-Push).
+         * @type {Set<import('http').ServerResponse>}
+         */
+        this.sseClients = new Set();
+        this.sseHeartbeat = null;
 
         this.on('ready',       this.onReady.bind(this));
         this.on('stateChange', this.onStateChange.bind(this));
@@ -70,10 +77,13 @@ class IoSyncAdapter extends utils.Adapter {
     onUnload(callback) {
         try {
             this.log.info('IoSync Broker wird gestoppt…');
-            for (const entry of this.cache.values()) {
-                if (entry.timer) clearInterval(entry.timer);
-            }
             this.cache.clear();
+
+            if (this.sseHeartbeat) { clearInterval(this.sseHeartbeat); this.sseHeartbeat = null; }
+            for (const res of this.sseClients) {
+                try { res.end(); } catch (e) { /* ignore */ }
+            }
+            this.sseClients.clear();
 
             const finish = () => {
                 this.setStateAsync('info.connection', { val: false, ack: true })
@@ -105,8 +115,7 @@ class IoSyncAdapter extends utils.Adapter {
             return;
         }
 
-        const alias      = dp.alias.trim();
-        const intervalMs = Math.max(1, (dp.intervalSec || 30)) * 1000;
+        const alias = dp.alias.trim();
 
         // Metadaten laden (Einheit)
         let unit = '';
@@ -118,27 +127,20 @@ class IoSyncAdapter extends utils.Adapter {
         }
 
         // Cache-Eintrag anlegen
-        const entry = { dp, value: null, type: 'mixed', unit, timestamp: 0, timer: null, lastStateChange: 0 };
+        const entry = { dp, value: null, type: 'mixed', unit, timestamp: 0, lastStateChange: 0 };
         this.cache.set(alias, entry);
 
-        // Ersten Wert sofort lesen
+        // Ersten Wert sofort lesen (Startwert)
         await this.readAndCacheState(alias);
 
-        // Echtzeit-Subscription
+        // Echtzeit-Subscription — Updates erfolgen ausschließlich event-basiert bei Änderung
         try {
             await this.subscribeForeignStatesAsync(dp.id);
         } catch (e) {
             this.log.debug(`Subscription für ${dp.id} fehlgeschlagen: ${e.message}`);
         }
 
-        // Interval-Timer
-        entry.timer = setInterval(() => {
-            this.readAndCacheState(alias).catch(e =>
-                this.log.warn(`Intervalfehler ${dp.id}: ${e.message}`)
-            );
-        }, intervalMs);
-
-        this.log.info(`Datenpunkt "${alias}" (${dp.id}) alle ${dp.intervalSec || 30}s | Einheit: ${unit || '–'}`);
+        this.log.info(`Datenpunkt "${alias}" (${dp.id}) | Echtzeit (nur bei Änderung) | Einheit: ${unit || '–'}`);
     }
 
     /**
@@ -160,22 +162,79 @@ class IoSyncAdapter extends utils.Adapter {
         }
     }
 
+    /**
+     * Echtzeit-Update bei Wertänderung. Es gibt KEIN Zeitintervall — ein Wert wird
+     * ausschließlich dann übernommen (und damit für die App bereitgestellt), wenn er
+     * sich tatsächlich relevant geändert hat:
+     *   • Boolean   → nur bei echtem Wechsel (true ↔ false)
+     *   • Dezimal   → nur bei Abweichung von mindestens 0.2
+     *   • Ganzzahl  → nur bei Abweichung von mindestens 1
+     *   • sonstiges → nur bei Wertänderung
+     */
     onStateChange(id, state) {
-        // Echtzeit-Update für alle konfigurierten Datenpunkte — nur bei Wertänderung >= 0.2
+        if (!state) return;
         const now = Date.now();
+
         for (const [alias, entry] of this.cache.entries()) {
-            if (entry.dp.id === id && state) {
-                const prevValue = entry.value;
-                const newValue  = state.val;
-                const isNumeric = typeof newValue === 'number' && typeof prevValue === 'number';
-                if (isNumeric && Math.abs(newValue - prevValue) < 0.2) continue;
-                entry.lastStateChange = now;
-                entry.value     = newValue;
-                entry.type      = this.detectType(newValue);
-                entry.timestamp = state.ts || now;
-                this.log.debug(`Echtzeit-Update: "${alias}" = ${newValue}`);
+            if (entry.dp.id !== id) continue;
+
+            const prevValue = entry.value;
+            const newValue  = state.val;
+            let send = true;
+
+            // Erster Wert oder Typwechsel → immer übernehmen
+            if (prevValue !== null && prevValue !== undefined && typeof prevValue === typeof newValue) {
+                if (typeof newValue === 'boolean') {
+                    // Boolean: nur senden, wenn der Wert wirklich umgeschaltet wurde
+                    send = newValue !== prevValue;
+                } else if (typeof newValue === 'number') {
+                    // Dezimalzahl → Schwelle 0.2, Ganzzahl → Schwelle 1
+                    const isDecimal = !Number.isInteger(newValue) || !Number.isInteger(prevValue);
+                    send = Math.abs(newValue - prevValue) >= (isDecimal ? 0.2 : 1);
+                } else {
+                    // String / sonstiges: nur bei tatsächlicher Änderung
+                    send = newValue !== prevValue;
+                }
+            }
+
+            if (!send) continue;
+
+            entry.value           = newValue;
+            entry.type            = this.detectType(newValue);
+            entry.timestamp       = state.ts || now;
+            entry.lastStateChange = now;
+            this.log.debug(`Echtzeit-Update: "${alias}" = ${newValue}`);
+
+            // Echtzeit-Push an verbundene Clients (SSE) — nur bei aktivierter Push-Option
+            this.broadcastSse(alias, entry);
+        }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Echtzeit-Push (Server-Sent Events)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Sendet ein einzelnes Datenpunkt-Update an alle verbundenen SSE-Clients.
+     * Wird ausschließlich bei einer relevanten Wertänderung aufgerufen.
+     * @param {string} alias
+     * @param {object} entry
+     */
+    broadcastSse(alias, entry) {
+        if (this.config.pushEnabled === false) return;
+        if (this.sseClients.size === 0) return;
+
+        const payload = JSON.stringify(this.buildApiPayload(alias, entry));
+        const frame   = `event: update\ndata: ${payload}\n\n`;
+
+        for (const res of this.sseClients) {
+            try {
+                res.write(frame);
+            } catch (e) {
+                this.sseClients.delete(res);
             }
         }
+        this.log.debug(`Push: "${alias}" an ${this.sseClients.size} Client(s) gesendet`);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -220,10 +279,41 @@ class IoSyncAdapter extends utils.Adapter {
 
         app.get('/api/health', (_req, res) => {
             res.json({
-                status:     'ok',
-                adapter:    'iosync',
-                serverTime: Date.now(),
-                datapoints: this.cache.size
+                status:      'ok',
+                adapter:     'iosync',
+                serverTime:  Date.now(),
+                datapoints:  this.cache.size,
+                pushEnabled: this.config.pushEnabled !== false
+            });
+        });
+
+        // Echtzeit-Push via Server-Sent Events. Der Client (z.B. Android-App) hält
+        // diese Verbindung offen und erhält bei jeder relevanten Wertänderung sofort
+        // ein "update"-Event. Nur aktiv, wenn Push in der Konfiguration eingeschaltet ist.
+        app.get('/api/stream', (req, res) => {
+            if (this.config.pushEnabled === false) {
+                return res.status(404).json({ error: 'Push ist deaktiviert' });
+            }
+
+            res.writeHead(200, {
+                'Content-Type':      'text/event-stream',
+                'Cache-Control':     'no-cache, no-transform',
+                'Connection':        'keep-alive',
+                'X-Accel-Buffering': 'no'
+            });
+            res.write('retry: 5000\n\n');
+            // Aktuellen Stand sofort einmalig senden, damit der Client nicht erst auf
+            // die nächste Änderung warten muss.
+            for (const [alias, entry] of this.cache.entries()) {
+                res.write(`event: update\ndata: ${JSON.stringify(this.buildApiPayload(alias, entry))}\n\n`);
+            }
+
+            this.sseClients.add(res);
+            this.log.info(`SSE-Client verbunden (${this.sseClients.size} aktiv)`);
+
+            req.on('close', () => {
+                this.sseClients.delete(res);
+                this.log.info(`SSE-Client getrennt (${this.sseClients.size} aktiv)`);
             });
         });
 
@@ -357,6 +447,16 @@ class IoSyncAdapter extends utils.Adapter {
             this.log.error(`API-Server-Fehler: ${err.message}`);
             this.setStateAsync('info.connection', { val: false, ack: true });
         });
+
+        // Heartbeat hält SSE-Verbindungen über Proxies/NAT offen (Kommentarzeile).
+        if (!this.sseHeartbeat) {
+            this.sseHeartbeat = setInterval(() => {
+                for (const res of this.sseClients) {
+                    try { res.write(': ping\n\n'); }
+                    catch (e) { this.sseClients.delete(res); }
+                }
+            }, 25_000);
+        }
     }
 
     /**

@@ -439,6 +439,22 @@
                 </div>
             </div>
 
+            <div class="section-title">Echtzeit-Push</div>
+            <div class="row" style="margin-bottom:8px;">
+                <div class="col s12" style="padding-top:8px;">
+                    <label style="display:flex;align-items:center;gap:10px;cursor:pointer;">
+                        <input type="checkbox" id="pushEnabled" class="filled-in" />
+                        <span style="color:#eee;">
+                            Echtzeit-Push aktivieren (Server-Sent Events unter /api/stream)
+                        </span>
+                    </label>
+                    <p style="color:#666;font-size:0.78rem;margin:4px 0 0 26px;">
+                        Bei aktiviertem Push sendet der Adapter Wertänderungen sofort an verbundene Clients
+                        (z.B. die Android-App), die sie direkt an die Uhr weitergibt – ohne Polling.
+                    </p>
+                </div>
+            </div>
+
             <div class="section-title">SSL / HTTP-Modus</div>
             <div class="row" style="margin-bottom:8px;">
                 <div class="col s12" style="padding-top:8px;">
@@ -1019,6 +1035,7 @@ function load(settings, onChange) {
     document.getElementById('apiSslCertPath').value = settings.apiSslCertPath || '';
     document.getElementById('apiSslKeyPath').value  = settings.apiSslKeyPath  || '';
     document.getElementById('httpMode').checked     = !!settings.httpMode;
+    document.getElementById('pushEnabled').checked  = settings.pushEnabled !== false;
     updateSslFieldsVisibility();
 
     renderDpTable(settings.dataPoints || []);
@@ -1037,6 +1054,8 @@ function load(settings, onChange) {
         updateSslFieldsVisibility();
         onChange();
     });
+
+    document.getElementById('pushEnabled').addEventListener('change', onChange);
 }
 
 function updateSslFieldsVisibility() {
@@ -1052,6 +1071,7 @@ function save(callback) {
         apiSslCertPath: document.getElementById('apiSslCertPath').value.trim(),
         apiSslKeyPath:  document.getElementById('apiSslKeyPath').value.trim(),
         httpMode:       document.getElementById('httpMode').checked,
+        pushEnabled:    document.getElementById('pushEnabled').checked,
         dataPoints:     collectDataPoints()
     };
 

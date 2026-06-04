@@ -1,8 +1,16 @@
 {
   "common": {
     "name": "iosync",
-    "version": "2.6.6",
+    "version": "2.7.0",
     "news": {
+      "2.7.0": {
+        "en": "New: Real-time push (Server-Sent Events) at /api/stream. When a value changes the adapter pushes it instantly to connected clients (e.g. the Android app), which forwards it directly to the watch. Toggle via 'pushEnabled' in the adapter config.",
+        "de": "Neu: Echtzeit-Push (Server-Sent Events) unter /api/stream. Bei Wertänderung sendet der Adapter den Wert sofort an verbundene Clients (z.B. die Android-App), die ihn direkt an die Uhr weitergibt. Schaltbar über 'Push aktivieren' in der Adapter-Konfiguration."
+      },
+      "2.6.7": {
+        "en": "Rework: Pure event-based real-time updates (no polling interval). Boolean values are sent only on a real toggle, decimals only on a change of at least 0.2, integers only on a change of at least 1.",
+        "de": "Überarbeitung: Rein event-basierte Echtzeit-Updates (kein Polling-Intervall). Boolean-Werte werden nur bei echtem Wechsel gesendet, Dezimalzahlen nur ab 0.2 Abweichung, Ganzzahlen nur ab 1 Abweichung."
+      },
       "2.6.6": {
         "en": "Fix: Real-time updates only triggered when value changes by at least 0.2 (threshold instead of throttle).",
         "de": "Fix: Echtzeit-Updates nur bei Wertänderung um mindestens 0.2 (Schwellwert statt Throttle)."
@@ -115,6 +123,7 @@
     "apiSslCertPath": "",
     "apiSslKeyPath": "",
     "httpMode": false,
+    "pushEnabled": true,
     "dataPoints": []
   },
   "objects": [],
